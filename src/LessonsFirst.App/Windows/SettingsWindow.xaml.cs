@@ -21,7 +21,7 @@ public partial class SettingsWindow : Window
     private readonly UpdateService _updater;
     private UpdateInfo? _pendingUpdate;
 
-    public SettingsWindow(SettingsService settings, AuthService auth, TaskProvider tasks, UpdateService updater)
+    public SettingsWindow(SettingsService settings, AuthService auth, TaskProvider tasks, UpdateService updater, bool pinVerified = false)
     {
         InitializeComponent();
         _settings = settings;
@@ -40,6 +40,12 @@ public partial class SettingsWindow : Window
             GradeHintText.Text = GradeBox.SelectedIndex >= 0 && GradeBox.SelectedIndex < GradeHints.Length
                 ? GradeHints[GradeBox.SelectedIndex]
                 : "";
+
+        if (pinVerified)
+        {
+            // PIN уже проверен (вход из экрана замка) — сразу показываем настройки.
+            ShowSettings();
+        }
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)

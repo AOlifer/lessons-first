@@ -48,6 +48,7 @@ internal sealed class TrayIcon : IDisposable
     private readonly HwndSource _source;
     private readonly System.Drawing.Icon _icon;
     private readonly ContextMenu _menu;
+    private readonly int _taskbarCreatedMessage;
     private NOTIFYICONDATA _data;
 
     /// <summary>Левый клик по иконке.</summary>
@@ -56,6 +57,7 @@ internal sealed class TrayIcon : IDisposable
     public TrayIcon(ContextMenu menu)
     {
         _menu = menu;
+        _taskbarCreatedMessage = RegisterWindowMessage("TaskbarCreated");
 
         // Окно-приёмник сообщений трея (message-only).
         var parameters = new HwndSourceParameters("LessonsFirstTray") { ParentWindow = new IntPtr(-3) };
@@ -90,6 +92,14 @@ internal sealed class TrayIcon : IDisposable
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
+        if (msg == _taskbarCreatedMessage)
+        {
+            // Explorer перезапустился — область уведомлений создана заново, добавляем иконку обратно.
+            Shell_NotifyIcon(NIM_ADD, ref _data);
+            handled = true;
+            return IntPtr.Zero;
+        }
+
         if (msg != WM_TRAYICON)
             return IntPtr.Zero;
 
@@ -107,6 +117,9 @@ internal sealed class TrayIcon : IDisposable
 
         return IntPtr.Zero;
     }
+
+    [DllImport("user32.dll", EntryPoint = "RegisterWindowMessageW", CharSet = CharSet.Unicode)]
+    private static extern int RegisterWindowMessage(string name);
 
     private static System.Drawing.Icon CreateIcon()
     {

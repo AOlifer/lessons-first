@@ -44,6 +44,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,18">
@@ -135,7 +136,7 @@
                         <Button x:Name="PinCancelButton" Content="Назад" Height="48" MinWidth="110" FontSize="19"
                                 Margin="12,0,0,0" Background="#FF2A3358" Click="PinCancel_Click"/>
                     </StackPanel>
-                    <TextBlock Grid.Row="6" x:Name="PinHelpText" Text="PIN родителя: вход без задач или открытие настроек"
+                    <TextBlock Grid.Row="7" x:Name="PinHelpText" Text="PIN родителя: «Войти» — вход без задач, «Настройки» — окно настроек"
                                FontSize="13" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center"
                                Margin="0,10,0,0" Visibility="Collapsed"/>
                 </Grid>

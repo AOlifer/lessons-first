@@ -2,6 +2,7 @@ using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using LessonsFirst.App.Interop;
 using LessonsFirst.App.Services;
 using LessonsFirst.App.Tasks;
@@ -117,6 +118,21 @@ public partial class App : Application
         }
 
         _ = CheckForUpdatesAsync(notify: true);
+
+        // Подсказываем, где искать значок приложения (Win11 часто прячет его под стрелкой).
+        var tray = _tray;
+        if (tray is not null)
+        {
+            var dispatcherTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            dispatcherTimer.Tick += (_, _) =>
+            {
+                dispatcherTimer.Stop();
+                tray.ShowBalloon(
+                    "Сначала уроки!",
+                    "Приложение работает. Его значок — в области уведомлений у часов (может быть под стрелкой ↑).");
+            };
+            dispatcherTimer.Start();
+        }
     }
 
     private void CreateTray()
@@ -250,9 +266,9 @@ public partial class App : Application
         });
     }
 
-    public void OpenSettings()
+    public void OpenSettings(bool pinVerified = false)
     {
-        var window = new SettingsWindow(_settings, _auth, _tasks, _updater) { Owner = null };
+        var window = new SettingsWindow(_settings, _auth, _tasks, _updater, pinVerified) { Owner = null };
         window.Show();
         window.Activate();
     }

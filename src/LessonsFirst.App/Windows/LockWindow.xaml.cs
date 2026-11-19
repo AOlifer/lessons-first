@@ -430,7 +430,7 @@ public partial class LockWindow : Window
             Unlock();
             if (openSettings && Application.Current is App app)
             {
-                app.OpenSettings();
+                app.OpenSettings(pinVerified: true);
             }
 
             return;
