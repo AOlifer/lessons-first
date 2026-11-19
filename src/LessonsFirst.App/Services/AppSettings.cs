@@ -14,6 +14,12 @@ public sealed class AppSettings
     /// <summary>Запускаться вместе с Windows (HKCU\Software\...\Run).</summary>
     public bool AutostartEnabled { get; set; } = true;
 
+    /// <summary>Показывать замок при запуске приложения (старт Windows).</summary>
+    public bool LockOnStartup { get; set; } = true;
+
+    /// <summary>Показывать замок после пробуждения из сна / разблокировки сеанса.</summary>
+    public bool LockOnResume { get; set; } = true;
+
     /// <summary>PBKDF2-хэш PIN родителя (base64). null — PIN ещё не задан.</summary>
     public string? PinHash { get; set; }
 

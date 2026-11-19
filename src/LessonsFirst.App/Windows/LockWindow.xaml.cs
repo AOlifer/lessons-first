@@ -25,6 +25,8 @@ public partial class LockWindow : Window
 
     private SchoolTask _current = null!;
     private int _correctCount;
+    private int _mistakes;
+    private DateTime _lockedAt;
     private bool _answeringLocked;   // ждём показа следующей задачи
     private bool _unlocked;
 
@@ -89,6 +91,8 @@ public partial class LockWindow : Window
     public void ResetProgress()
     {
         _correctCount = 0;
+        _mistakes = 0;
+        _lockedAt = DateTime.Now;
         _unlocked = false;
         _tasks.Configure(_settings.Settings.GradeBand);
         _hook.Install();
@@ -198,22 +202,44 @@ public partial class LockWindow : Window
         }
         else
         {
+            _mistakes++;
             FeedbackText.Foreground = (Brush)FindResource("DangerBrush");
             FeedbackText.Text = "✗ Неверно. Попробуй другую задачу!";
         }
 
         await Task.Delay(900);
 
-        if (_correctCount >= _settings.Settings.RequiredCorrect)
+        if (!_unlocked)
         {
-            Unlock();
-        }
-        else if (!_unlocked)
-        {
-            ShowNextTask();
+            if (_correctCount >= _settings.Settings.RequiredCorrect)
+            {
+                ShowSuccessAndUnlock();
+            }
+            else
+            {
+                ShowNextTask();
+            }
         }
     }
 
+    /// <summary>Все задачи решены: показываем поздравление, замок снимем после его закрытия.</summary>
+    private void ShowSuccessAndUnlock()
+    {
+        _unlocked = true;
+        _hook.Uninstall();
+        _focusGuard.Stop();
+        Hide();
+
+        var elapsed = DateTime.Now - _lockedAt;
+        var success = new SuccessWindow
+        {
+            StatsText = { Text = $"Верных ответов: {_correctCount} · Ошибок: {_mistakes} · Время: {elapsed.Minutes:00}:{elapsed.Seconds:00}" },
+        };
+        success.Closed += (_, _) => Unlocked?.Invoke();
+        success.Show();
+    }
+
+    /// <summary>PIN родителя: замок снимается сразу, без поздравления.</summary>
     private void Unlock()
     {
         _unlocked = true;

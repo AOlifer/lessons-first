@@ -9,6 +9,10 @@ namespace LessonsFirst.App.Services;
 /// </summary>
 internal sealed class LockService : IDisposable
 {
+    private readonly SettingsService _settings;
+
+    public LockService(SettingsService settings) => _settings = settings;
+
     public event Action? LockRequested;
 
     public void Start()
@@ -19,14 +23,14 @@ internal sealed class LockService : IDisposable
 
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
-        if (e.Mode == PowerModes.Resume)
+        if (e.Mode == PowerModes.Resume && _settings.Settings.LockOnResume)
             Raise();
     }
 
     private void OnSessionSwitch(object sender, SessionSwitchEventArgs e)
     {
         // Ребёнок разблокировал сеанс (Win+L) — снова требуем уроки.
-        if (e.Reason == SessionSwitchReason.SessionUnlock)
+        if (e.Reason == SessionSwitchReason.SessionUnlock && _settings.Settings.LockOnResume)
             Raise();
     }
 
