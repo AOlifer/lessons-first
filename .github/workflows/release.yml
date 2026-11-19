@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [master]
+    tags: ['v*']
 
 concurrency:
   group: release-master
@@ -22,13 +22,17 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Read version from csproj
+      - name: Read version from tag (cross-check with csproj)
         id: ver
         shell: pwsh
         run: |
-          $version = (Select-Xml -Path "src/LessonsFirst.App/LessonsFirst.App.csproj" -XPath "//Version").Node.InnerText
-          "version=$version" >> $env:GITHUB_OUTPUT
-          Write-Host "Releasing version $version"
+          $tagVersion = "${{ github.ref_name }}".TrimStart('v')
+          $csprojVersion = (Select-Xml -Path "src/LessonsFirst.App/LessonsFirst.App.csproj" -XPath "//Version").Node.InnerText
+          if ($tagVersion -ne $csprojVersion) {
+            Write-Error "Tag v$tagVersion != csproj version $csprojVersion"; exit 1
+          }
+          "version=$csprojVersion" >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing version $csprojVersion"
 
       - name: Publish single-file exe
         run: >
