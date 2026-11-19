@@ -1,0 +1,25 @@
+using LessonsFirst.App.Tasks;
+
+namespace LessonsFirst.App.Services;
+
+public sealed class AppSettings
+{
+    public int SchemaVersion { get; set; } = 1;
+
+    public GradeBand GradeBand { get; set; } = GradeBand.Grades34;
+
+    /// <summary>Сколько правильных ответов нужно для разблокировки.</summary>
+    public int RequiredCorrect { get; set; } = 5;
+
+    /// <summary>Запускаться вместе с Windows (HKCU\Software\...\Run).</summary>
+    public bool AutostartEnabled { get; set; } = true;
+
+    /// <summary>PBKDF2-хэш PIN родителя (base64). null — PIN ещё не задан.</summary>
+    public string? PinHash { get; set; }
+
+    /// <summary>Соль для хэша PIN (base64).</summary>
+    public string? PinSalt { get; set; }
+
+    /// <summary>Когда последний раз проверяли обновления (UTC).</summary>
+    public DateTime LastUpdateCheckUtc { get; set; } = DateTime.MinValue;
+}
