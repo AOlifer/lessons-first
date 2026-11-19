@@ -21,10 +21,25 @@ public partial class SuccessWindow : Window
         _autoClose.Tick += (_, _) => Close();
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+
+        // Границы в DIP до первой отрисовки — иначе окно успевает мигнуть
+        // в дефолтном размере перед растягиванием на весь экран.
+        var (px, py, pw, ph) = Win32.GetPrimaryScreenBounds();
+        var scale = System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        Left = px / scale;
+        Top = py / scale;
+        Width = pw / scale;
+        Height = ph / scale;
+
+        ApplyBounds();
+    }
+
     protected override void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
-        ApplyBounds();
         _autoClose.Start();
     }
 

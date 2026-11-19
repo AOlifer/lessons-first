@@ -54,6 +54,14 @@ public partial class LockWindow : Window
     {
         base.OnSourceInitialized(e);
 
+        // Границы в DIP до первой отрисовки — чтобы окно не мигало в дефолтном размере.
+        var (px, py, pw, ph) = Win32.GetPrimaryScreenBounds();
+        var scale = System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        Left = px / scale;
+        Top = py / scale;
+        Width = pw / scale;
+        Height = ph / scale;
+
         // Прячем окно из Alt+Tab (WS_EX_TOOLWINDOW).
         var hwnd = new WindowInteropHelper(this).Handle;
         var exStyle = Win32.GetWindowLong(hwnd, Win32.GWL_EXSTYLE);
@@ -372,7 +380,6 @@ public partial class LockWindow : Window
         _unlocked = true;
         _hook.Uninstall();
         _focusGuard.Stop();
-        Hide();
 
         var elapsed = DateTime.Now - _lockedAt;
         var success = new SuccessWindow
@@ -380,7 +387,10 @@ public partial class LockWindow : Window
             StatsText = { Text = $"Верных ответов: {_progress.Correct} · Ошибок: {_mistakes} · Время: {elapsed.Minutes:00}:{elapsed.Seconds:00}" },
         };
         success.Closed += (_, _) => Unlocked?.Invoke();
+        // Сначала показываем экран успеха (замок ещё закрывает экран), только потом прячем замок —
+        // иначе между окнами мигает рабочий стол.
         success.Show();
+        Hide();
     }
 
     /// <summary>PIN родителя: замок снимается сразу, без поздравления.</summary>
