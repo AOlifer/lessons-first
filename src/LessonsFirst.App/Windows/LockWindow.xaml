@@ -34,10 +34,9 @@
 
             <!-- Центр: задача -->
             <Border Grid.Row="1" Background="#E61F2749" CornerRadius="24" Padding="48,36"
-                    MinWidth="700" MaxWidth="1100" Margin="24">
+                    MinWidth="720" MaxWidth="1100" Margin="24">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -51,11 +50,11 @@
                         <Border Background="{StaticResource PeriwinkleBrush}" CornerRadius="14" Padding="14,5">
                             <TextBlock x:Name="SubjectText" Text="Математика" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource PaperBrush}"/>
                         </Border>
-                        <TextBlock x:Name="ProgressText" Text="Задача 1 из 5" FontSize="17" Foreground="{StaticResource MutedTextBrush}"
+                        <TextBlock x:Name="ProgressText" Text="Верных ответов: 0 из 5" FontSize="17" Foreground="{StaticResource MutedTextBrush}"
                                    VerticalAlignment="Center" Margin="14,0,0,0"/>
                     </StackPanel>
 
-                    <TextBlock Grid.Row="1" x:Name="PromptText" Text="Сколько будет 2 + 2?"
+                    <TextBlock Grid.Row="1" x:Name="PromptText" Text="Вычисли: 2 + 2"
                                FontSize="34" FontWeight="SemiBold" Foreground="{StaticResource PaperBrush}"
                                HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                                Margin="0,0,0,8"/>
@@ -64,21 +63,64 @@
                                Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" TextWrapping="Wrap"
                                Margin="0,0,0,18"/>
 
-                    <!-- Варианты ответа (русский) -->
+                    <!-- Варианты ответа (русский язык) и знаки сравнения -->
                     <WrapPanel Grid.Row="3" x:Name="OptionsPanel" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <WrapPanel Grid.Row="3" x:Name="ComparisonPanel" HorizontalAlignment="Center" Margin="0,0,0,4" Visibility="Collapsed"/>
 
-                    <!-- Ввод ответа (математика) -->
-                    <StackPanel Grid.Row="4" x:Name="InputPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-                        <TextBox x:Name="AnswerBox" Width="260" Height="58" FontSize="28" TextAlignment="Center"
-                                 VerticalContentAlignment="Center" Background="#FF151B38" Foreground="{StaticResource PaperBrush}"
-                                 BorderBrush="{StaticResource PeriwinkleBrush}" BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
-                        <Button x:Name="SubmitButton" Content="Ответить" Height="58" MinWidth="150" FontSize="22"
-                                Margin="14,0,0,0" Click="Submit_Click"/>
+                    <!-- Ввод: одно поле / дробь / пара множителей -->
+                    <StackPanel Grid.Row="4" x:Name="InputPanel" HorizontalAlignment="Center" Margin="0,4,0,0">
+                        <!-- Одно поле: целое или десятичная дробь -->
+                        <StackPanel x:Name="SinglePanel" Orientation="Horizontal">
+                            <TextBox x:Name="AnswerBox" Width="260" Height="58" FontSize="28" TextAlignment="Center"
+                                     VerticalContentAlignment="Center" Background="#FF151B38" Foreground="{StaticResource PaperBrush}"
+                                     BorderBrush="{StaticResource PeriwinkleBrush}" BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                            <Button x:Name="SubmitButton" Content="Проверить" Height="58" MinWidth="160" FontSize="22"
+                                    Margin="14,0,0,0" Click="Submit_Click"/>
+                        </StackPanel>
+
+                        <!-- Дробь: числитель / знаменатель -->
+                        <StackPanel x:Name="FractionPanel" Orientation="Horizontal" Visibility="Collapsed">
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="Числитель" FontSize="13" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center"/>
+                                <TextBox x:Name="NumeratorBox" Width="130" Height="54" FontSize="26" TextAlignment="Center"
+                                         VerticalContentAlignment="Center" Background="#FF151B38" Foreground="{StaticResource PaperBrush}"
+                                         BorderBrush="{StaticResource PeriwinkleBrush}" BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                            </StackPanel>
+                            <TextBlock Text="—" FontSize="40" Foreground="{StaticResource PaperBrush}" VerticalAlignment="Center" Margin="0,18,10,0"/>
+                            <StackPanel Margin="0,0,14,0">
+                                <TextBlock Text="Знаменатель" FontSize="13" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center"/>
+                                <TextBox x:Name="DenominatorBox" Width="130" Height="54" FontSize="26" TextAlignment="Center"
+                                         VerticalContentAlignment="Center" Background="#FF151B38" Foreground="{StaticResource PaperBrush}"
+                                         BorderBrush="{StaticResource PeriwinkleBrush}" BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                            </StackPanel>
+                            <Button Content="Проверить" Height="54" MinWidth="150" FontSize="21" VerticalAlignment="Bottom" Click="Submit_Click"/>
+                        </StackPanel>
+                        <TextBlock x:Name="FractionHintText" Text="Можно записать неправильную дробь" FontSize="13"
+                                   Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,8,0,0"
+                                   Visibility="Collapsed"/>
+
+                        <!-- Пара множителей: два поля -->
+                        <StackPanel x:Name="PairPanel" Orientation="Horizontal" Visibility="Collapsed">
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="1-е число" FontSize="13" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center"/>
+                                <TextBox x:Name="FirstFactorBox" Width="130" Height="54" FontSize="26" TextAlignment="Center"
+                                         VerticalContentAlignment="Center" Background="#FF151B38" Foreground="{StaticResource PaperBrush}"
+                                         BorderBrush="{StaticResource PeriwinkleBrush}" BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                            </StackPanel>
+                            <TextBlock Text="×" FontSize="34" Foreground="{StaticResource PaperBrush}" VerticalAlignment="Center" Margin="0,16,10,0"/>
+                            <StackPanel Margin="0,0,14,0">
+                                <TextBlock Text="2-е число" FontSize="13" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center"/>
+                                <TextBox x:Name="SecondFactorBox" Width="130" Height="54" FontSize="26" TextAlignment="Center"
+                                         VerticalContentAlignment="Center" Background="#FF151B38" Foreground="{StaticResource PaperBrush}"
+                                         BorderBrush="{StaticResource PeriwinkleBrush}" BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                            </StackPanel>
+                            <Button Content="Проверить" Height="54" MinWidth="150" FontSize="21" VerticalAlignment="Bottom" Click="Submit_Click"/>
+                        </StackPanel>
                     </StackPanel>
 
                     <TextBlock Grid.Row="5" x:Name="FeedbackText" Text="" FontSize="24" FontWeight="SemiBold"
                                Foreground="{StaticResource PaperBrush}"
-                               HorizontalAlignment="Center" Margin="0,18,0,0"/>
+                               HorizontalAlignment="Center" Margin="0,18,0,0" TextWrapping="Wrap"/>
 
                     <!-- PIN для родителей -->
                     <StackPanel Grid.Row="6" x:Name="PinPanel" Orientation="Horizontal" HorizontalAlignment="Center"

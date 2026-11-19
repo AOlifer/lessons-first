@@ -4,7 +4,7 @@ namespace LessonsFirst.App.Tasks;
 public sealed record ChoiceItem(string Prompt, string Correct, params string[] Wrongs);
 
 /// <summary>Генератор задач по русскому языку: орфограммы, формы слов, тся/ться.</summary>
-public sealed class RussianGenerator : ITaskGenerator
+public sealed class RussianGenerator
 {
     private const string Subject = "Русский язык";
 
@@ -108,10 +108,12 @@ public sealed class RussianGenerator : ITaskGenerator
         return new SchoolTask
         {
             Subject = Subject,
+            TemplateId = "RU",
             Prompt = item.Prompt,
-            CorrectAnswer = item.Correct,
+            Hint = "Вспомни правило из учебника",
+            Form = AnswerForm.Choice,
+            CorrectOption = item.Correct,
             Options = options,
-            IsTextInput = false,
         };
     }
 

@@ -1,7 +1,10 @@
+using LessonsFirst.App.Tasks.MathTasks;
+
 namespace LessonsFirst.App.Tasks;
 
 /// <summary>
-/// Выдаёт задачи, чередуя математику и русский язык (не больше двух подряд одного предмета).
+/// Выдаёт задания, чередуя математику и русский язык (не больше двух подряд одного предмета).
+/// Математика — через MathEngine с перемешанным циклом шаблонов и дедупликацией.
 /// </summary>
 public sealed class TaskProvider
 {
@@ -9,8 +12,8 @@ public sealed class TaskProvider
     private const string RussianSubject = "Русский язык";
 
     private readonly Random _rng;
-    private MathGenerator _math = null!;
     private RussianGenerator _russian = null!;
+    private MathEngine _math = null!;
     private GradeBand _band;
     private string? _lastSubject;
     private int _lastSubjectStreak;
@@ -25,11 +28,13 @@ public sealed class TaskProvider
     public void Configure(GradeBand band)
     {
         if (_band == band && _math is not null)
+        {
             return;
+        }
 
         _band = band;
-        _math = new MathGenerator(band);
         _russian = new RussianGenerator(band);
+        _math = new MathEngine(_rng, band);
     }
 
     public SchoolTask Next()
@@ -44,11 +49,15 @@ public sealed class TaskProvider
         }
 
         if (subject == _lastSubject)
+        {
             _lastSubjectStreak++;
+        }
         else
+        {
             _lastSubjectStreak = 1;
+        }
 
         _lastSubject = subject;
-        return wantMath ? _math.Generate(_rng) : _russian.Generate(_rng);
+        return wantMath ? _math.Next() : _russian.Generate(_rng);
     }
 }
