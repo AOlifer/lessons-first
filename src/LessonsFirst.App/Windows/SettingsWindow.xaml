@@ -3,12 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Сначала уроки! — настройки"
         Width="560" SizeToContent="Height"
-        MaxWidth="760"
-        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        WindowStartupLocation="Manual" ResizeMode="NoResize"
         Background="{StaticResource MidnightBrush}"
         Icon="/Assets/app-icon-256.png"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown"
+        ContentRendered="SettingsWindow_ContentRendered">
 
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="28">
         <!-- Экран подтверждения PIN -->
         <StackPanel x:Name="PinGatePanel">
@@ -92,4 +93,5 @@
             </StackPanel>
         </StackPanel>
     </StackPanel>
+    </ScrollViewer>
 </Window>

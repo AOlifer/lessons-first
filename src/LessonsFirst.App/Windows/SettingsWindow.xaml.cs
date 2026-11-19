@@ -29,6 +29,9 @@ public partial class SettingsWindow : Window
         _tasks = tasks;
         _updater = updater;
 
+        // Окно с большим содержимым не должно вылезать за экран: ограничиваем рабочей областью.
+        MaxHeight = SystemParameters.WorkArea.Height - 24;
+
         GradeBox.ItemsSource = new[]
         {
             "1–2 класс — простой",
@@ -60,6 +63,15 @@ public partial class SettingsWindow : Window
             Gate_Click(sender, e);
             e.Handled = true;
         }
+    }
+
+    /// <summary>Явное центрирование по рабочей области главного монитора
+    /// (CenterScreen смещает высокие окна за пределы экрана).</summary>
+    private void SettingsWindow_ContentRendered(object sender, EventArgs e)
+    {
+        var workArea = SystemParameters.WorkArea;
+        Left = workArea.Left + (workArea.Width - ActualWidth) / 2;
+        Top = workArea.Top + Math.Max(0, (workArea.Height - ActualHeight) / 2);
     }
 
     private void Gate_Click(object sender, RoutedEventArgs e)
