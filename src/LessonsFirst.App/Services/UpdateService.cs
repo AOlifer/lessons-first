@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace LessonsFirst.App.Services;
 
-public sealed record UpdateInfo(Version Version, string Tag, string NotesUrl, string SetupAssetUrl);
+public sealed record UpdateInfo(Version Version, string Tag, string NotesUrl, string AssetName, string SetupAssetUrl);
 
 /// <summary>
 /// Самообновление из GitHub Releases. Репозиторий задаётся переменной проекта
@@ -17,7 +17,9 @@ public sealed record UpdateInfo(Version Version, string Tag, string NotesUrl, st
 /// </summary>
 public sealed class UpdateService : IDisposable
 {
-    private const string SetupAssetName = "LessonsFirst-Setup.exe";
+    /// <summary>Ассет ищется по маске: имя начинается с LessonsFirst-Setup и заканчивается на .exe
+    /// (инсталлятор называется LessonsFirst-Setup-{версия}.exe).</summary>
+    private const string SetupAssetPrefix = "LessonsFirst-Setup";
 
     private static readonly HttpClient Http = CreateClient();
 
@@ -52,23 +54,28 @@ public sealed class UpdateService : IDisposable
                 return null;
 
             string? assetUrl = null;
+            string? assetName = null;
             if (root.TryGetProperty("assets", out var assets))
             {
                 foreach (var asset in assets.EnumerateArray())
                 {
-                    if (asset.GetProperty("name").GetString() == SetupAssetName)
+                    var name = asset.GetProperty("name").GetString();
+                    if (name is not null
+                        && name.StartsWith(SetupAssetPrefix, StringComparison.OrdinalIgnoreCase)
+                        && name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                     {
+                        assetName = name;
                         assetUrl = asset.GetProperty("browser_download_url").GetString();
                         break;
                     }
                 }
             }
 
-            if (assetUrl is null)
+            if (assetUrl is null || assetName is null)
                 return null;
 
             var notesUrl = root.TryGetProperty("html_url", out var html) ? html.GetString() : null;
-            return new UpdateInfo(version, tag, notesUrl ?? AppLinks.ReleasesUrl, assetUrl);
+            return new UpdateInfo(version, tag, notesUrl ?? AppLinks.ReleasesUrl, assetName, assetUrl);
         }
         catch
         {
@@ -82,7 +89,7 @@ public sealed class UpdateService : IDisposable
         try
         {
             Directory.CreateDirectory(UpdatesDirectory);
-            var setupPath = Path.Combine(UpdatesDirectory, SetupAssetName);
+            var setupPath = Path.Combine(UpdatesDirectory, info.AssetName);
             var tempPath = setupPath + ".part";
 
             log?.Invoke($"Скачиваю {info.Tag}…");

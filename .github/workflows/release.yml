@@ -66,6 +66,6 @@ jobs:
           name: "Сначала уроки! v${{ steps.ver.outputs.version }}"
           generate_release_notes: true
           files: |
-            installer-output/LessonsFirst-Setup.exe
+            installer-output/LessonsFirst-Setup-*.exe
             LessonsFirst-Portable.zip
             lessons-first-brand/promo/lessons-first-promo.png
