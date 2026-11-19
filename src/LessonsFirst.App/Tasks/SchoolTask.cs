@@ -1,62 +1,71 @@
 namespace LessonsFirst.App.Tasks;
 
+/// <summary>Форма ответа: определяет интерфейс ввода на экране задания.</summary>
+public enum AnswerForm
+{
+    /// <summary>Выбор из вариантов (русский язык).</summary>
+    Choice,
+
+    /// <summary>Целое число в одном поле.</summary>
+    Integer,
+
+    /// <summary>Десятичная дробь в одном поле (запятая или точка).</summary>
+    Decimal,
+
+    /// <summary>Обыкновенная дробь: отдельные поля числителя и знаменателя.</summary>
+    Fraction,
+
+    /// <summary>Пара целых множителей: два поля, порядок не важен.</summary>
+    FactorPair,
+
+    /// <summary>Сравнение: кнопки &lt;, =, &gt;.</summary>
+    Comparison,
+}
+
+/// <summary>Отношение сравнения.</summary>
+public enum ComparisonRelation
+{
+    Less,
+    Equal,
+    Greater,
+}
+
 /// <summary>
-/// Одна школьная задача: либо ввод ответа с клавиатуры (математика),
-/// либо выбор из вариантов (русский язык).
+/// Задание для экрана замка. Единая модель для математики и русского языка.
+/// Математические задания содержат структурированный ожидаемый ответ
+/// (целое / decimal / дробь / пара множителей / отношение) — без разбора текста.
 /// </summary>
 public sealed class SchoolTask
 {
     public required string Subject { get; init; }
 
-    /// <summary>Текст задания, например «Сколько будет 7 × 8?» или «Выбери букву: к_рова».</summary>
     public required string Prompt { get; init; }
 
+    /// <summary>Тематическая подсказка (способ решения, без готового ответа).</summary>
     public string? Hint { get; init; }
 
-    /// <summary>true — ответ вводится текстом; false — выбор кнопки из <see cref="Options"/>.</summary>
-    public bool IsTextInput { get; init; }
+    /// <summary>Идентификатор шаблона («A1»…«C12») либо «RU» для русского языка.</summary>
+    public string TemplateId { get; init; } = "";
 
-    /// <summary>Канонический правильный ответ (для ввода — строка, для выбора — текст варианта).</summary>
-    public required string CorrectAnswer { get; init; }
+    /// <summary>Уникальный идентификатор экземпляра: один TaskId засчитывается один раз.</summary>
+    public Guid TaskId { get; init; } = Guid.NewGuid();
 
-    /// <summary>Варианты ответа (уже перемешаны). null для текстового ввода.</summary>
+    public AnswerForm Form { get; init; }
+
+    // —— Варианты выбора (русский язык) ——
     public IReadOnlyList<string>? Options { get; init; }
 
-    /// <summary>Ответ — дробь вида «3/8» (сравнение с упрощением).</summary>
-    public bool IsFraction { get; init; }
+    public string? CorrectOption { get; init; }
 
-    public bool CheckAnswer(string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-            return false;
+    // —— Структурированные ожидаемые ответы (математика) ——
+    public int ExpectedInteger { get; init; }
 
-        var value = input.Trim();
+    public decimal ExpectedDecimalValue { get; init; }
 
-        if (Options is not null)
-            return string.Equals(value, CorrectAnswer, StringComparison.OrdinalIgnoreCase);
+    /// <summary>Ожидаемая дробь в несократимом виде, знаменатель положительный.</summary>
+    public (int Numerator, int Denominator) ExpectedFraction { get; init; }
 
-        if (IsFraction)
-            return TryParseFraction(value, out var num, out var den)
-                && TryParseFraction(CorrectAnswer, out var cNum, out var cDen)
-                && num * cDen == cNum * den;
+    public (int First, int Second) ExpectedFactors { get; init; }
 
-        // Числовой ответ сравниваем как число, чтобы «07» == «7».
-        if (int.TryParse(value, out var answer) && int.TryParse(CorrectAnswer, out var canonical))
-            return answer == canonical;
-
-        return string.Equals(value, CorrectAnswer, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool TryParseFraction(string value, out int numerator, out int denominator)
-    {
-        numerator = denominator = 0;
-        var parts = value.Split('/', StringSplitOptions.TrimEntries);
-        if (parts.Length == 2
-            && int.TryParse(parts[0], out numerator)
-            && int.TryParse(parts[1], out denominator)
-            && denominator != 0)
-            return true;
-
-        return false;
-    }
+    public ComparisonRelation ExpectedRelation { get; init; }
 }
