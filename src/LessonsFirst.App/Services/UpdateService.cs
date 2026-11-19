@@ -10,13 +10,14 @@ namespace LessonsFirst.App.Services;
 public sealed record UpdateInfo(Version Version, string Tag, string NotesUrl, string AssetUrl);
 
 /// <summary>
-/// Самообновление из GitHub Releases (github.com/AOlifer/lessons-first).
-/// Скачивает ассет LessonsFirst.exe, подменяет работающий exe
-/// (работающий переименовывается в .old и удаляется при следующем запуске).
+/// Самообновление из GitHub Releases. Репозиторий задаётся переменной проекта
+/// RepoSlug в csproj, ассет — LessonsFirst.exe. Скачивает новую версию и
+/// подменяет работающий exe (старый переименовывается в .old и удаляется
+/// при следующем запуске).
 /// </summary>
 public sealed class UpdateService : IDisposable
 {
-    private const string Repo = "AOlifer/lessons-first";
+    private static string Repo => AppLinks.RepoSlug;
     private const string AssetName = "LessonsFirst.exe";
 
     private static readonly HttpClient Http = CreateClient();

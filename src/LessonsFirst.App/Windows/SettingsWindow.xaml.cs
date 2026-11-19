@@ -69,6 +69,8 @@ public partial class SettingsWindow : Window
         };
         RequiredBox.SelectedItem = s.RequiredCorrect.ToString();
         AutostartBox.IsChecked = s.AutostartEnabled;
+        LockOnStartupBox.IsChecked = s.LockOnStartup;
+        LockOnResumeBox.IsChecked = s.LockOnResume;
 
         PinGatePanel.Visibility = Visibility.Collapsed;
         SettingsPanel.Visibility = Visibility.Visible;
@@ -104,6 +106,8 @@ public partial class SettingsWindow : Window
         };
         s.RequiredCorrect = int.Parse((string)RequiredBox.SelectedItem!);
         s.AutostartEnabled = AutostartBox.IsChecked == true;
+        s.LockOnStartup = LockOnStartupBox.IsChecked == true;
+        s.LockOnResume = LockOnResumeBox.IsChecked == true;
         _settings.Save();
 
         _tasks.Configure(s.GradeBand);
@@ -112,4 +116,10 @@ public partial class SettingsWindow : Window
 
         Close();
     }
+
+    private void Donate_Click(object sender, RoutedEventArgs e) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppLinks.DonateUrl) { UseShellExecute = true });
+
+    private void Issues_Click(object sender, RoutedEventArgs e) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppLinks.IssuesUrl) { UseShellExecute = true });
 }

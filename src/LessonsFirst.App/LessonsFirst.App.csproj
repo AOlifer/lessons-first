@@ -15,6 +15,24 @@
     <ApplicationIcon>..\..\lessons-first-brand\icons\lessons-first.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <!-- Внешние ссылки приложения: меняются здесь, без правок кода.
+       Попадают в сборку как AssemblyMetadata и читаются через AppLinks. -->
+  <PropertyGroup>
+    <RepoSlug>AOlifer/lessons-first</RepoSlug>
+    <DonateUrl>https://pay.cloudtips.ru/p/020a7c72</DonateUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>RepoSlug</_Parameter1>
+      <_Parameter2>$(RepoSlug)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DonateUrl</_Parameter1>
+      <_Parameter2>$(DonateUrl)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <ItemGroup>
     <Resource Include="..\..\lessons-first-brand\icons\lessons-first.ico" Link="Assets\lessons-first.ico"/>
     <Resource Include="..\..\lessons-first-brand\icons\app-icon-256.png" Link="Assets\app-icon-256.png"/>

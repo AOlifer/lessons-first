@@ -45,7 +45,7 @@ public partial class App : Application
         _tasks = new TaskProvider();
         _tasks.Configure(_settings.Settings.GradeBand);
         _updater = new UpdateService();
-        _lockService = new LockService();
+        _lockService = new LockService(_settings);
         _lockService.LockRequested += ShowLock;
         _lockService.Start();
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
@@ -56,10 +56,14 @@ public partial class App : Application
         if (!_auth.HasPin)
         {
             var setup = new PinSetupWindow(_auth);
-            setup.PinSet += () => Dispatcher.Invoke(ShowLock);
+            setup.PinSet += () => Dispatcher.Invoke(() =>
+            {
+                if (_settings.Settings.LockOnStartup)
+                    ShowLock();
+            });
             setup.Show();
         }
-        else
+        else if (_settings.Settings.LockOnStartup)
         {
             ShowLock();
         }
@@ -77,17 +81,29 @@ public partial class App : Application
         var settingsItem = new MenuItem { Header = "Настройки…" };
         settingsItem.Click += (_, _) => OpenSettings();
 
+        var donate = new MenuItem { Header = "☕ Поддержать проект" };
+        donate.Click += (_, _) => OpenLink(AppLinks.DonateUrl);
+
+        var issues = new MenuItem { Header = "🐛 Сообщить о проблеме" };
+        issues.Click += (_, _) => OpenLink(AppLinks.IssuesUrl);
+
         var exit = new MenuItem { Header = "Выход" };
         exit.Click += (_, _) => ExitApp();
 
         menu.Items.Add(lockNow);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new Separator());
+        menu.Items.Add(donate);
+        menu.Items.Add(issues);
+        menu.Items.Add(new Separator());
         menu.Items.Add(exit);
 
         _tray = new TrayIcon(menu);
         _tray.Clicked += ShowLock;
     }
+
+    private static void OpenLink(string url) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
 
     private void SyncAutostart()
     {
