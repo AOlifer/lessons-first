@@ -1,0 +1,34 @@
+PROMOTIONAL COVER PROMPT
+Use case: ads-marketing.
+Asset type: finished Russian promotional cover banner, landscape 16:9.
+Image 1 is the EDIT TARGET: the existing navy 3D illustration background with open ivory book, floating lime key, computer screen and two learning tiles. Preserve that artwork, palette, lighting and the crisp hero composition as faithfully as possible.
+Image 2 is a supporting BRAND ICON reference: use this exact flat white open-book and diagonal lime-key glyph on its midnight rounded square, without inventing a different symbol.
+Primary request: Add beautiful editorial typography and this small brand icon in the LEFT negative space to create a premium finished advertisement for «Сначала уроки!». This is a real finished visual, not a browser or mockup. Keep a clean safe margin around all content. No frame.
+Composition: keep right hero as in Image 1. All typography and the small brand icon fit in the left 40% of the canvas, away from the book; very intentional alignment on one left edge. Top-left small brand signature: the reference app icon alongside the two-line wordmark "Сначала" / "уроки!" in warm offwhite. Leave comfortable vertical breathing room before the main headline. Large headline at mid-left in a bold friendly modern geometric Cyrillic sans: first line "Сначала уроки." in warm offwhite; below that "Потом" and "компьютер." in bright lime, in two more lines. Make "Потом компьютер." the strongest type in the visual. Clear spacing and no text touching other elements.
+Below headline add the smaller readable supporting line, exactly across two lines: "Математика и русский язык" / "перед доступом к ПК."
+Below that add two small restrained rounded outline labels side by side, exact text: "1–6 класс" and "Для Windows".
+At the bottom left, a small quiet line: "github.com/AOlifer/lessons-first".
+Text (verbatim, grouped):
+Brand: "Сначала" / "уроки!"
+Headline: "Сначала уроки." / "Потом" / "компьютер."
+Support: "Математика и русский язык" / "перед доступом к ПК."
+Labels: "1–6 класс" and "Для Windows".
+Footer: "github.com/AOlifer/lessons-first".
+Color palette: background midnight navy; warm paper white type #F7F6F2, lime headline #D7F561, subtle lavender borders. Flat sharp typography above the 3D illustration. No shadows or outlines on the main type. Elegant, not loud.
+Constraints: Render all Cyrillic correctly, especially "Сначала", "уроки!", "компьютер.", "русский". No additional text. No CTA button. Do not add logos other than the given icon. No cropping, no watermark, no illegible microtext. Preserve 16:9 full-bleed composition.
+
+---
+
+GENERATION METHOD
+Built-in image_gen tool. Background is an AI-generated raster illustration; SVG icon and logo are independently authored true vector geometry.
+
+BACKGROUND PROMPT
+Use case: ads-marketing.
+Asset type: high quality 16:9 widescreen advertising background for a Russian Windows app called "Сначала уроки!" (Lessons first); the app asks school math and Russian-language exercises before access to the computer.
+Primary request: Create an original polished premium 3D editorial illustration about knowledge being the key to computer time. Deliver a text-free background that can also be used behind a marketing title.
+Scene/backdrop: smooth matte midnight navy studio world (#151B38), subtly lighter behind the hero, with a very quiet diffuse lavender halo near the right. Seamless floor and backdrop, refined soft shadows, no horizon line.
+Subject: On the RIGHT half, a beautiful large open schoolbook with thick warm ivory sculptural pages and a periwinkle hard cover (#7775F5) sits on a low minimal rounded platform. Above the open book floats a single friendly lime-green key (#D7F561), with a clean circular bow, short shaft and two strong teeth, turned diagonally upwards. Behind the book is a slim elegant desktop computer display with a rounded dark casing and calm luminous periwinkle screen, suggesting access that learning opens. A small plus-symbol tile and a single Cyrillic А-symbol tile may float near the right-side book as sparse educational accents; no equations, no other writing.
+Style/medium: sophisticated tactile 3D product illustration, soft matte clay and premium paper, crisp edges and convincing volume, not a cheap toy render. Friendly and intelligent, suitable for parents and children from grades 1–6.
+Composition/framing: wide 16:9 canvas, ideally 3840x2160. Keep the entire LEFT 44% clean, dark and nearly empty for an overlaid headline; hero grouping occupies roughly x=52% to 93%, y=17% to 89%. Generous margins. Hero book, key and screen clearly legible. The whole scene should feel art-directed, balanced and uncluttered.
+Lighting/mood: gentle warm front light, cool periwinkle rim light, attractive soft contact shadows. Calm, optimistic, inviting.
+Constraints: no people, no hands, no lock, no padlock, no chains, no shield, no game controller, no logos, no watermarks, no captions, no interface panels, no extra objects, no unnecessary decorative confetti. Do not depict any text other than the optional isolated math plus and Cyrillic А learning symbols. This is the final textless background, not a poster with typography.
