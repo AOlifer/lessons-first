@@ -49,13 +49,13 @@ Name: "{autodesktop}\Сначала уроки!"; Filename: "{app}\LessonsFirst.
 ; Задача 1 «LessonsFirstLogon»: запуск при входе ЛЮБОГО пользователя —
 ; групповой принципал «Пользователи» даёт интерактивный запуск в сеансе вошедшего.
 Filename: "powershell.exe"; \
-    Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""$a = New-ScheduledTaskAction -Execute '{app}\LessonsFirst.exe'; $t = New-ScheduledTaskTrigger -AtLogOn; $p = New-ScheduledTaskPrincipal -GroupId 'S-1-5-32-545' -RunLevel Limited; Register-ScheduledTask -TaskName 'LessonsFirstLogon' -Action $a -Trigger $t -Principal $p -Force"""; \
+    Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""$a = New-ScheduledTaskAction -Execute '{app}\LessonsFirst.exe' -Argument '--watchdog'; $t = New-ScheduledTaskTrigger -AtLogOn; $p = New-ScheduledTaskPrincipal -GroupId 'S-1-5-32-545' -RunLevel Limited; Register-ScheduledTask -TaskName 'LessonsFirstLogon' -Action $a -Trigger $t -Principal $p -Force"""; \
     Flags: runhidden; Tasks: watchdog; StatusMsg: "Настройка автозапуска при входе…"
 ; Задача 2 «LessonsFirstWatch»: проверка каждые 5 минут — принципал именно УСТАНАВЛИВАЮЩИЙ
 ; пользователь с Interactive-входом, иначе планировщик стартует процесс на скрытом
 ; фоновом рабочем столе (приложение «висит невидимым» и держит блокировку запуска).
 Filename: "powershell.exe"; \
-    Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""$a = New-ScheduledTaskAction -Execute '{app}\LessonsFirst.exe'; $t = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650); $p = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited; Register-ScheduledTask -TaskName 'LessonsFirstWatch' -Action $a -Trigger $t -Principal $p -Force"""; \
+    Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""$a = New-ScheduledTaskAction -Execute '{app}\LessonsFirst.exe' -Argument '--watchdog'; $t = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650); $p = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited; Register-ScheduledTask -TaskName 'LessonsFirstWatch' -Action $a -Trigger $t -Principal $p -Force"""; \
     Flags: runhidden; Tasks: watchdog; StatusMsg: "Настройка слежения (перезапуск, если закрыли)…"
 Filename: "{app}\LessonsFirst.exe"; Description: "{cm:LaunchProgram,Сначала уроки!}"; Flags: nowait postinstall skipifsilent
 
