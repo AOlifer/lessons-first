@@ -47,13 +47,19 @@ public partial class LockWindow : Window
     {
         base.OnSourceInitialized(e);
 
+        // Прячем окно из Alt+Tab (WS_EX_TOOLWINDOW).
         var hwnd = new WindowInteropHelper(this).Handle;
-
-        // Прячем окно из Alt+Tab (WS_EX_TOOLWINDOW) и растягиваем на весь виртуальный экран.
         var exStyle = Win32.GetWindowLong(hwnd, Win32.GWL_EXSTYLE);
         Win32.SetWindowLong(hwnd, Win32.GWL_EXSTYLE, exStyle | Win32.WS_EX_TOOLWINDOW);
 
-        var (x, y, w, h) = Win32.GetVirtualScreenBounds();
+        ApplyFullScreenBounds();
+    }
+
+    /// <summary>Растягивает замок на главный монитор (координаты могли измениться после сна).</summary>
+    private void ApplyFullScreenBounds()
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        var (x, y, w, h) = Win32.GetPrimaryScreenBounds();
         Win32.SetWindowPos(hwnd, Win32.HWND_TOPMOST, x, y, w, h, Win32.SWP_SHOWWINDOW);
     }
 
@@ -86,6 +92,7 @@ public partial class LockWindow : Window
         _hook.Install();
         _focusGuard.Start();
         PinPanel.Visibility = Visibility.Collapsed;
+        ApplyFullScreenBounds();
         ShowNextTask();
         GuardFocus();
     }

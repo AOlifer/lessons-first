@@ -10,6 +10,8 @@ internal static class Win32
     public static readonly IntPtr HWND_TOPMOST = new(-1);
     public const uint SWP_SHOWWINDOW = 0x0040;
 
+    public const int SM_CXSCREEN = 0;
+    public const int SM_CYSCREEN = 1;
     public const int SM_XVIRTUALSCREEN = 76;
     public const int SM_YVIRTUALSCREEN = 77;
     public const int SM_CXVIRTUALSCREEN = 78;
@@ -36,4 +38,8 @@ internal static class Win32
             GetSystemMetrics(SM_YVIRTUALSCREEN),
             GetSystemMetrics(SM_CXVIRTUALSCREEN),
             GetSystemMetrics(SM_CYVIRTUALSCREEN));
+
+    /// <summary>Прямоугольник главного монитора в физических пикселях (начало — 0,0).</summary>
+    public static (int X, int Y, int Width, int Height) GetPrimaryScreenBounds() =>
+        (0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
 }
