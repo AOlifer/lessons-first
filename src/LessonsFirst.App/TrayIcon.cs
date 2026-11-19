@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using LessonsFirst.App.Interop;
+using LessonsFirst.App.Services;
 using System.Windows.Controls;
 
 namespace LessonsFirst.App;
@@ -23,6 +24,7 @@ internal sealed class TrayIcon : IDisposable
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct NOTIFYICONDATA
     {
+        public uint cbSize;
         public IntPtr hWnd;
         public uint uID;
         public uint uFlags;
@@ -63,6 +65,7 @@ internal sealed class TrayIcon : IDisposable
         _icon = CreateIcon();
         _data = new NOTIFYICONDATA
         {
+            cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf<NOTIFYICONDATA>(),
             hWnd = _source.Handle,
             uID = 1,
             uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
@@ -70,7 +73,10 @@ internal sealed class TrayIcon : IDisposable
             hIcon = _icon.Handle,
             szTip = "Сначала уроки!",
         };
-        Shell_NotifyIcon(NIM_ADD, ref _data);
+        if (!Shell_NotifyIcon(NIM_ADD, ref _data))
+        {
+            AppLog.Write("[Трей] Shell_NotifyIcon(NIM_ADD) не удалось — иконка не показана.");
+        }
     }
 
     public void ShowBalloon(string title, string text)
