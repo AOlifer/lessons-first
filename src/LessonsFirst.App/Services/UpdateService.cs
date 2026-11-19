@@ -7,18 +7,17 @@ using System.Windows;
 
 namespace LessonsFirst.App.Services;
 
-public sealed record UpdateInfo(Version Version, string Tag, string NotesUrl, string AssetUrl);
+public sealed record UpdateInfo(Version Version, string Tag, string NotesUrl, string SetupAssetUrl);
 
 /// <summary>
 /// Самообновление из GitHub Releases. Репозиторий задаётся переменной проекта
-/// RepoSlug в csproj, ассет — LessonsFirst.exe. Скачивает новую версию и
-/// подменяет работающий exe (старый переименовывается в .old и удаляется
-/// при следующем запуске).
+/// RepoSlug в csproj. Скачивает инсталлятор LessonsFirst-Setup.exe новой версии
+/// и запускает его (для установки в Program Files нужен UAC-запрос — это нормально),
+/// после чего приложение завершается.
 /// </summary>
 public sealed class UpdateService : IDisposable
 {
-    private static string Repo => AppLinks.RepoSlug;
-    private const string AssetName = "LessonsFirst.exe";
+    private const string SetupAssetName = "LessonsFirst-Setup.exe";
 
     private static readonly HttpClient Http = CreateClient();
 
@@ -38,7 +37,7 @@ public sealed class UpdateService : IDisposable
     {
         try
         {
-            using var response = await Http.GetAsync($"https://api.github.com/repos/{Repo}/releases/latest");
+            using var response = await Http.GetAsync($"https://api.github.com/repos/{AppLinks.RepoSlug}/releases/latest");
             if (!response.IsSuccessStatusCode)
                 return null;
 
@@ -57,7 +56,7 @@ public sealed class UpdateService : IDisposable
             {
                 foreach (var asset in assets.EnumerateArray())
                 {
-                    if (asset.GetProperty("name").GetString() == AssetName)
+                    if (asset.GetProperty("name").GetString() == SetupAssetName)
                     {
                         assetUrl = asset.GetProperty("browser_download_url").GetString();
                         break;
@@ -69,7 +68,7 @@ public sealed class UpdateService : IDisposable
                 return null;
 
             var notesUrl = root.TryGetProperty("html_url", out var html) ? html.GetString() : null;
-            return new UpdateInfo(version, tag, notesUrl ?? $"https://github.com/{Repo}/releases/latest", assetUrl);
+            return new UpdateInfo(version, tag, notesUrl ?? AppLinks.ReleasesUrl, assetUrl);
         }
         catch
         {
@@ -77,65 +76,32 @@ public sealed class UpdateService : IDisposable
         }
     }
 
-    /// <summary>Скачивает новую версию и подменяет текущий exe. Возвращает true при успехе.</summary>
+    /// <summary>Скачивает инсталлятор новой версии и запускает его. Возвращает true, если установка началась.</summary>
     public async Task<bool> DownloadAndApplyAsync(UpdateInfo info, Action<string>? log = null)
     {
         try
         {
             Directory.CreateDirectory(UpdatesDirectory);
-            var downloadedPath = Path.Combine(UpdatesDirectory, AssetName);
-            var tempPath = downloadedPath + ".part";
+            var setupPath = Path.Combine(UpdatesDirectory, SetupAssetName);
+            var tempPath = setupPath + ".part";
 
             log?.Invoke($"Скачиваю {info.Tag}…");
             using (var file = File.Create(tempPath))
-            using (var download = await Http.GetStreamAsync(info.AssetUrl))
+            using (var download = await Http.GetStreamAsync(info.SetupAssetUrl))
             {
                 await download.CopyToAsync(file);
             }
-            File.Move(tempPath, downloadedPath, overwrite: true);
+            File.Move(tempPath, setupPath, overwrite: true);
 
-            ApplyUpdate(downloadedPath, log);
+            log?.Invoke("Запускаю установщик…");
+            Process.Start(new ProcessStartInfo(setupPath) { UseShellExecute = true });
+            Application.Current.Shutdown();
             return true;
         }
         catch (Exception ex)
         {
-            log?.Invoke($"Обновление не удалось: {ex.Message}");
+            log?.Invoke($"Обновление не удалось: {ex.Message} Скачайте вручную: {info.NotesUrl}");
             return false;
-        }
-    }
-
-    /// <summary>Подменяет работающий exe: текущий → .old, новый → на его место, запуск новой версии.</summary>
-    private static void ApplyUpdate(string newFilePath, Action<string>? log)
-    {
-        var exePath = Environment.ProcessPath
-            ?? throw new InvalidOperationException("Не удалось определить путь к исполняемому файлу");
-
-        var oldPath = exePath + ".old";
-        if (File.Exists(oldPath))
-            File.Delete(oldPath);
-
-        log?.Invoke("Заменяю исполняемый файл…");
-        File.Move(exePath, oldPath);
-        File.Copy(newFilePath, exePath, overwrite: true);
-
-        Process.Start(new ProcessStartInfo(exePath) { UseShellExecute = true });
-        Application.Current.Shutdown();
-    }
-
-    /// <summary>Удаляет оставшиеся от прошлого обновления .old-файлы (вызывать при старте).</summary>
-    public static void CleanupOldFiles()
-    {
-        try
-        {
-            if (Environment.ProcessPath is not { } exePath)
-                return;
-            var old = exePath + ".old";
-            if (File.Exists(old))
-                File.Delete(old);
-        }
-        catch
-        {
-            // Не критично: файл подчистим при следующем запуске.
         }
     }
 
@@ -143,7 +109,7 @@ public sealed class UpdateService : IDisposable
     {
         var client = new HttpClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd("LessonsFirst-updater");
-        client.Timeout = TimeSpan.FromMinutes(5);
+        client.Timeout = TimeSpan.FromMinutes(10);
         return client;
     }
 

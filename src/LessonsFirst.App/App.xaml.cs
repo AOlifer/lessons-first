@@ -30,15 +30,28 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        AppLog.Init();
+        DispatcherUnhandledException += (_, args) =>
+        {
+            AppLog.Error("Dispatcher", args.Exception);
+            args.Handled = true; // не даём упасть: замок обязан жить
+        };
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            AppLog.Error("Task", args.Exception);
+            args.SetObserved();
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            AppLog.Error("AppDomain", (args.ExceptionObject as Exception)!);
+
         _mutex = new Mutex(true, MutexName, out var isFirstInstance);
         if (!isFirstInstance)
         {
             // Уже запущено: единственный экземпляр должен показать замок.
+            AppLog.Write("Повторный запуск — выходим (один экземпляр).");
             Shutdown();
             return;
         }
-
-        UpdateService.CleanupOldFiles();
 
         _settings = new SettingsService();
         _auth = new AuthService(_settings);
