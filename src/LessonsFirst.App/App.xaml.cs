@@ -47,28 +47,38 @@ public partial class App : Application
             AppLog.Error("AppDomain", (args.ExceptionObject as Exception)!);
 
         _mutex = new Mutex(true, MutexName, out var isFirstInstance);
+        var launchedByWatchdog = e.Args.Contains("--watchdog", StringComparer.OrdinalIgnoreCase);
         if (!isFirstInstance)
         {
-            // Уже запущено: просим живой экземпляр показать замок и выходим.
-            try
+            if (!launchedByWatchdog)
             {
-                if (EventWaitHandle.TryOpenExisting(ShowLockEventName, out var existing))
+                // Уже запущено, но запустил человек: просим живой экземпляр показать замок.
+                try
                 {
-                    existing.Set();
-                    existing.Dispose();
+                    if (EventWaitHandle.TryOpenExisting(ShowLockEventName, out var existing))
+                    {
+                        existing.Set();
+                        existing.Dispose();
+                    }
                 }
+                catch
+                {
+                    // Не удалось сигнализировать — просто выходим.
+                }
+
+                AppLog.Write("Повторный запуск — сигнализируем живому экземпляру и выходим.");
             }
-            catch
+            else
             {
-                // Не удалось сигнализировать — просто выходим.
+                // Watchdog видит живой экземпляр — тишина, ничего не показываем.
+                AppLog.Write("Watchdog: приложение уже работает — тихо выходим.");
             }
 
-            AppLog.Write("Повторный запуск — сигнализируем живому экземпляру и выходим.");
             Shutdown();
             return;
         }
 
-        // Сигнал «покажи замок» от повторных запусков и от планировщика.
+        // Сигнал «покажи замок» от повторных ручных запусков.
         _showLockSignal = new EventWaitHandle(false, EventResetMode.AutoReset, ShowLockEventName);
         System.Threading.ThreadPool.RegisterWaitForSingleObject(
             _showLockSignal,
@@ -88,6 +98,9 @@ public partial class App : Application
         CreateTray();
         SyncAutostart();
 
+        // Родитель недавно вышел через трей — watchdog молча живёт в трее, без замка.
+        var suppressStartupLock = launchedByWatchdog && WasRecentlyParentExit();
+
         if (!_auth.HasPin)
         {
             var setup = new PinSetupWindow(_auth);
@@ -98,7 +111,7 @@ public partial class App : Application
             });
             setup.Show();
         }
-        else if (_settings.Settings.LockOnStartup)
+        else if (_settings.Settings.LockOnStartup && !suppressStartupLock)
         {
             ShowLock();
         }
@@ -146,8 +159,36 @@ public partial class App : Application
             AutoStartService.Sync(_settings.Settings.AutostartEnabled, exePath);
     }
 
+    /// <summary>Метка «родитель вышел через трей»: watchdog в течение 15 минут не возвращает замок.</summary>
+    private static string ParentExitedFlagPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "LessonsFirst", "parent-exited.flag");
+
+    private static bool WasRecentlyParentExit()
+    {
+        try
+        {
+            return File.Exists(ParentExitedFlagPath)
+                && DateTime.UtcNow - File.GetLastWriteTimeUtc(ParentExitedFlagPath) < TimeSpan.FromMinutes(15);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public void ShowLock()
     {
+        try
+        {
+            if (File.Exists(ParentExitedFlagPath))
+                File.Delete(ParentExitedFlagPath);
+        }
+        catch
+        {
+            // Не критично.
+        }
+
         EnsureCovers();
         ShowCovers();
 
@@ -236,6 +277,17 @@ public partial class App : Application
 
     private void ExitApp()
     {
+        try
+        {
+            // Запоминаем осознанный выход: watchdog не должен сразу возвращать замок.
+            Directory.CreateDirectory(Path.GetDirectoryName(ParentExitedFlagPath)!);
+            File.WriteAllText(ParentExitedFlagPath, DateTime.UtcNow.ToString("O"));
+        }
+        catch
+        {
+            // Не критично.
+        }
+
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         foreach (var cover in _covers)
             cover.AllowClose();
