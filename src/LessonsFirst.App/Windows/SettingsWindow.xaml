@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Сначала уроки! — настройки"
-        Width="520" SizeToContent="Height"
+        Width="560" SizeToContent="Height"
+        MaxWidth="760"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
         Background="{StaticResource MidnightBrush}"
         Icon="/Assets/app-icon-256.png"
@@ -26,14 +27,22 @@
 
         <!-- Сами настройки -->
         <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
-            <TextBlock Text="Настройки" FontSize="22" FontWeight="Bold" Foreground="{StaticResource PaperBrush}" Margin="0,0,0,16"/>
 
-            <TextBlock Text="Класс (сложность задач)" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
-            <ComboBox x:Name="GradeBox" Height="40" FontSize="16" Margin="0,6,0,14"/>
+            <TextBlock Text="Задачи" FontSize="16" FontWeight="Bold" Foreground="{StaticResource LimeBrush}" Margin="0,0,0,10"/>
 
-            <TextBlock Text="Сколько правильных ответов для разблокировки" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
+            <TextBlock Text="Сложность (класс)" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
+            <ComboBox x:Name="GradeBox" Height="40" FontSize="16" Margin="0,6,0,4"/>
+            <TextBlock x:Name="GradeHintText" Text="" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+            <TextBlock Text="Сколько правильных ответов нужно для доступа" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
             <ComboBox x:Name="RequiredBox" Height="40" FontSize="16" Margin="0,6,0,14"/>
 
+            <CheckBox x:Name="ShowHintsBox" Content="Показывать подсказки к задачам"
+                      FontSize="15" Foreground="{StaticResource PaperBrush}" Margin="0,0,0,4"/>
+            <TextBlock Text="Подсказка объясняет способ решения, но не даёт готовый ответ"
+                       FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,18"/>
+
+            <TextBlock Text="Блокировка" FontSize="16" FontWeight="Bold" Foreground="{StaticResource LimeBrush}" Margin="0,0,0,10"/>
             <CheckBox x:Name="AutostartBox" Content="Запускаться вместе с Windows"
                       FontSize="15" Foreground="{StaticResource PaperBrush}" Margin="0,0,0,8"/>
             <CheckBox x:Name="LockOnStartupBox" Content="Блокировать при запуске Windows"
@@ -41,8 +50,28 @@
             <CheckBox x:Name="LockOnResumeBox" Content="Блокировать после пробуждения и разблокировки (Win+L)"
                       FontSize="15" Foreground="{StaticResource PaperBrush}" Margin="0,0,0,18"/>
 
-            <TextBlock Text="Обновления" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
-            <StackPanel Orientation="Horizontal" Margin="0,6,0,6">
+            <TextBlock Text="PIN родителя" FontSize="16" FontWeight="Bold" Foreground="{StaticResource LimeBrush}" Margin="0,0,0,10"/>
+            <StackPanel x:Name="PinChangePanel" Visibility="Collapsed">
+                <TextBlock Text="Текущий PIN" FontSize="13" Foreground="{StaticResource MutedTextBrush}"/>
+                <PasswordBox x:Name="CurrentPinBox" Height="40" FontSize="18" Margin="0,4,0,10"
+                             Background="#FF151B38" Foreground="{StaticResource PaperBrush}" BorderBrush="{StaticResource PeriwinkleBrush}"
+                             BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                <TextBlock Text="Новый PIN (минимум 4 символа)" FontSize="13" Foreground="{StaticResource MutedTextBrush}"/>
+                <PasswordBox x:Name="NewPinBox" Height="40" FontSize="18" Margin="0,4,0,10"
+                             Background="#FF151B38" Foreground="{StaticResource PaperBrush}" BorderBrush="{StaticResource PeriwinkleBrush}"
+                             BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                <TextBlock Text="Повторите новый PIN" FontSize="13" Foreground="{StaticResource MutedTextBrush}"/>
+                <PasswordBox x:Name="NewPinRepeatBox" Height="40" FontSize="18" Margin="0,4,0,10"
+                             Background="#FF151B38" Foreground="{StaticResource PaperBrush}" BorderBrush="{StaticResource PeriwinkleBrush}"
+                             BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                <TextBlock x:Name="PinChangeErrorText" Text="" FontSize="13" Foreground="{StaticResource DangerBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                <Button Content="Сохранить новый PIN" Height="42" FontSize="16" Click="SavePin_Click"/>
+            </StackPanel>
+            <Button x:Name="ChangePinButton" Content="Сменить PIN" Height="42" FontSize="16"
+                    Background="#337775F5" Foreground="{StaticResource PaperBrush}" Click="ChangePin_Click"/>
+
+            <TextBlock Text="Обновления" FontSize="16" FontWeight="Bold" Foreground="{StaticResource LimeBrush}" Margin="0,18,0,10"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                 <Button x:Name="CheckUpdateButton" Content="Проверить обновления" Height="40" FontSize="15"
                         Click="CheckUpdate_Click"/>
                 <TextBlock x:Name="UpdateStatusText" Text="" FontSize="14" Foreground="{StaticResource MutedTextBrush}"

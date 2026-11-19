@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,6 +8,13 @@ namespace LessonsFirst.App.Windows;
 
 public partial class SettingsWindow : Window
 {
+    private static readonly string[] GradeHints =
+    {
+        "Счёт в пределах 20 и 100, сравнение чисел, простые задачи на сложение и вычитание",
+        "Таблица умножения, «на» и «в несколько раз», математический диктант, произведения и частные",
+        "Умножение и деление больших чисел, уравнения, дроби, проценты, отрицательные числа",
+    };
+
     private readonly SettingsService _settings;
     private readonly AuthService _auth;
     private readonly TaskProvider _tasks;
@@ -25,17 +31,23 @@ public partial class SettingsWindow : Window
 
         GradeBox.ItemsSource = new[]
         {
-            "1–2 класс",
-            "3–4 класс",
-            "5–6 класс",
+            "1–2 класс — простой",
+            "3–4 класс — базовый",
+            "5–6 класс — сложный",
         };
-        RequiredBox.ItemsSource = new[] { "3", "5", "10", "15" };
+        RequiredBox.ItemsSource = new[] { "3", "5", "10", "15", "20" };
+        GradeBox.SelectionChanged += (_, _) =>
+            GradeHintText.Text = GradeBox.SelectedIndex >= 0 && GradeBox.SelectedIndex < GradeHints.Length
+                ? GradeHints[GradeBox.SelectedIndex]
+                : "";
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter)
+        {
             return;
+        }
 
         if (PinGatePanel.Visibility == Visibility.Visible)
         {
@@ -71,9 +83,47 @@ public partial class SettingsWindow : Window
         AutostartBox.IsChecked = s.AutostartEnabled;
         LockOnStartupBox.IsChecked = s.LockOnStartup;
         LockOnResumeBox.IsChecked = s.LockOnResume;
+        ShowHintsBox.IsChecked = s.ShowHints;
 
         PinGatePanel.Visibility = Visibility.Collapsed;
         SettingsPanel.Visibility = Visibility.Visible;
+    }
+
+    private void ChangePin_Click(object sender, RoutedEventArgs e)
+    {
+        PinChangePanel.Visibility = Visibility.Visible;
+        ChangePinButton.Visibility = Visibility.Collapsed;
+        Keyboard.Focus(CurrentPinBox);
+    }
+
+    private void SavePin_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_auth.VerifyPin(CurrentPinBox.Password))
+        {
+            PinChangeErrorText.Text = "Текущий PIN неверный.";
+            return;
+        }
+
+        var newPin = NewPinBox.Password;
+        if (newPin.Trim().Length < 4)
+        {
+            PinChangeErrorText.Text = "Новый PIN должен содержать минимум 4 символа.";
+            return;
+        }
+
+        if (newPin != NewPinRepeatBox.Password)
+        {
+            PinChangeErrorText.Text = "Новый PIN и повтор не совпадают.";
+            return;
+        }
+
+        _auth.SetPin(newPin);
+        PinChangeErrorText.Foreground = (System.Windows.Media.Brush)FindResource("LimeBrush");
+        PinChangeErrorText.Text = "PIN изменён ✓";
+
+        CurrentPinBox.Clear();
+        NewPinBox.Clear();
+        NewPinRepeatBox.Clear();
     }
 
     private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
@@ -108,6 +158,7 @@ public partial class SettingsWindow : Window
         s.AutostartEnabled = AutostartBox.IsChecked == true;
         s.LockOnStartup = LockOnStartupBox.IsChecked == true;
         s.LockOnResume = LockOnResumeBox.IsChecked == true;
+        s.ShowHints = ShowHintsBox.IsChecked == true;
         _settings.Save();
 
         _tasks.Configure(s.GradeBand);

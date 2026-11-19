@@ -11,6 +11,9 @@ public sealed class AppSettings
     /// <summary>Сколько правильных ответов нужно для разблокировки.</summary>
     public int RequiredCorrect { get; set; } = 5;
 
+    /// <summary>Показывать подсказки к задачам.</summary>
+    public bool ShowHints { get; set; } = true;
+
     /// <summary>Запускаться вместе с Windows (HKCU\Software\...\Run).</summary>
     public bool AutostartEnabled { get; set; } = true;
 

@@ -103,6 +103,7 @@ public partial class LockWindow : Window
         _hook.Install();
         _focusGuard.Start();
         PinPanel.Visibility = Visibility.Collapsed;
+        PinHelpText.Visibility = Visibility.Collapsed;
         ApplyFullScreenBounds();
         ShowNextTask();
         GuardFocus();
@@ -121,7 +122,7 @@ public partial class LockWindow : Window
 
         SubjectText.Text = _current.Subject;
         PromptText.Text = _current.Prompt;
-        HintText.Text = _current.Hint ?? "";
+        HintText.Text = _settings.Settings.ShowHints ? _current.Hint ?? "" : "";
         FeedbackText.Text = "";
         FeedbackText.Foreground = (Brush)FindResource("PaperBrush");
         ProgressText.Text = $"Верных ответов: {_progress.Correct} из {_progress.Required}";
@@ -235,7 +236,7 @@ public partial class LockWindow : Window
         {
             if (PinPanel.Visibility == Visibility.Visible)
             {
-                TryPin();
+                TryPin(openSettings: false);
             }
             else if (InputPanel.Visibility == Visibility.Visible)
             {
@@ -407,6 +408,7 @@ public partial class LockWindow : Window
     private void ParentLogin_Click(object sender, RoutedEventArgs e)
     {
         PinPanel.Visibility = Visibility.Visible;
+        PinHelpText.Visibility = Visibility.Visible;
         PinBox.Clear();
         Keyboard.Focus(PinBox);
     }
@@ -414,15 +416,23 @@ public partial class LockWindow : Window
     private void PinCancel_Click(object sender, RoutedEventArgs e)
     {
         PinPanel.Visibility = Visibility.Collapsed;
+        PinHelpText.Visibility = Visibility.Collapsed;
     }
 
-    private void PinUnlock_Click(object sender, RoutedEventArgs e) => TryPin();
+    private void PinUnlock_Click(object sender, RoutedEventArgs e) => TryPin(openSettings: false);
 
-    private async void TryPin()
+    private void PinSettings_Click(object sender, RoutedEventArgs e) => TryPin(openSettings: true);
+
+    private async void TryPin(bool openSettings)
     {
         if (_auth.VerifyPin(PinBox.Password))
         {
             Unlock();
+            if (openSettings && Application.Current is App app)
+            {
+                app.OpenSettings();
+            }
+
             return;
         }
 

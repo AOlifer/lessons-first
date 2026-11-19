@@ -250,7 +250,7 @@ public partial class App : Application
         });
     }
 
-    private void OpenSettings()
+    public void OpenSettings()
     {
         var window = new SettingsWindow(_settings, _auth, _tasks, _updater) { Owner = null };
         window.Show();
