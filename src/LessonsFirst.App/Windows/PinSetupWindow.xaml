@@ -1,0 +1,30 @@
+<Window x:Class="LessonsFirst.App.Windows.PinSetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Сначала уроки! — первый запуск"
+        Width="460" SizeToContent="Height"
+        WindowStyle="ToolWindow" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" Topmost="True"
+        Background="#FF182747" KeyDown="Window_KeyDown">
+    <StackPanel Margin="32">
+        <TextBlock Text="Добро пожаловать!" FontSize="26" FontWeight="Bold" Foreground="White"/>
+        <TextBlock FontSize="15" Foreground="#B3C7EE" TextWrapping="Wrap" Margin="0,10,0,4"
+                   Text="Это приложение просит ребёнка решить несколько школьных задач после включения компьютера."/>
+        <TextBlock FontSize="15" Foreground="#B3C7EE" TextWrapping="Wrap" Margin="0,0,0,18"
+                   Text="Придумайте PIN родителя — по нему вы будете обходить задачи и менять настройки."/>
+
+        <TextBlock Text="PIN родителя (минимум 4 символа)" FontSize="14" Foreground="#B3C7EE"/>
+        <PasswordBox x:Name="PinBox" Height="44" FontSize="20" Margin="0,6,0,14"
+                     Background="#FF101A33" Foreground="White" BorderBrush="#FF3B6FE0"
+                     BorderThickness="2" CaretBrush="White"/>
+
+        <TextBlock Text="Повторите PIN" FontSize="14" Foreground="#B3C7EE"/>
+        <PasswordBox x:Name="PinRepeatBox" Height="44" FontSize="20" Margin="0,6,0,14"
+                     Background="#FF101A33" Foreground="White" BorderBrush="#FF3B6FE0"
+                     BorderThickness="2" CaretBrush="White"/>
+
+        <TextBlock x:Name="ErrorText" Text="" FontSize="14" Foreground="#FFFF5252" Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+        <Button Content="Готово" Height="46" FontSize="19" Click="Save_Click"/>
+    </StackPanel>
+</Window>
