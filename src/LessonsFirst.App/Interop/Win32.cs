@@ -32,6 +32,50 @@ internal static class Win32
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    public delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT rect, IntPtr data);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr clip, MonitorEnumProc proc, IntPtr data);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
+    [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW", SetLastError = true)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
+
+    public sealed record MonitorBounds(int X, int Y, int Width, int Height, bool IsPrimary);
+
+    /// <summary>Все подключённые мониторы с их прямоугольниками в физических пикселях.</summary>
+    public static List<MonitorBounds> GetMonitors()
+    {
+        const uint monitorInfoPrimary = 1;
+
+        var result = new List<MonitorBounds>();
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, delegate (IntPtr monitor, IntPtr hdc, ref RECT rect, IntPtr data)
+        {
+            var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+            GetMonitorInfo(monitor, ref info);
+            result.Add(new MonitorBounds(
+                rect.Left, rect.Top,
+                rect.Right - rect.Left, rect.Bottom - rect.Top,
+                (info.dwFlags & monitorInfoPrimary) != 0));
+            return true;
+        }, IntPtr.Zero);
+        return result;
+    }
+
     /// <summary>Прямоугольник всего виртуального экрана (все мониторы вместе).</summary>
     public static (int X, int Y, int Width, int Height) GetVirtualScreenBounds() =>
         (GetSystemMetrics(SM_XVIRTUALSCREEN),

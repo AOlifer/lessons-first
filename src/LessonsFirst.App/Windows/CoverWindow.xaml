@@ -1,0 +1,28 @@
+<Window x:Class="LessonsFirst.App.Windows.CoverWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Сначала уроки!"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        Focusable="False"
+        IsHitTestVisible="True"
+        Background="{StaticResource MidnightBrush}">
+
+    <Grid>
+        <Image Source="/Assets/lessons-first-background.png"
+               Stretch="UniformToFill" Opacity="0.12"/>
+
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Image Source="/Assets/brand-mark-dark.png" Height="140" Opacity="0.85"
+                   RenderOptions.BitmapScalingMode="HighQuality"/>
+            <TextBlock Text="Задачи — на главном экране"
+                       FontSize="26" FontWeight="SemiBold"
+                       Foreground="{StaticResource MutedTextBrush}"
+                       HorizontalAlignment="Center" Margin="0,28,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

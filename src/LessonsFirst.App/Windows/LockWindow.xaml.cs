@@ -28,8 +28,10 @@ public partial class LockWindow : Window
     private bool _answeringLocked;   // ждём показа следующей задачи
     private bool _unlocked;
 
-    public LockWindow(SettingsService settings, AuthService auth, TaskProvider tasks)
-    {
+    /// <summary>Замок снят (решены задачи или введён PIN родителя).</summary>
+    public event Action? Unlocked;
+
+    public LockWindow(SettingsService settings, AuthService auth, TaskProvider tasks)    {
         _settings = settings;
         _auth = auth;
         _tasks = tasks;
@@ -218,6 +220,7 @@ public partial class LockWindow : Window
         _hook.Uninstall();
         _focusGuard.Stop();
         Hide();
+        Unlocked?.Invoke();
     }
 
     private void GuardFocus()

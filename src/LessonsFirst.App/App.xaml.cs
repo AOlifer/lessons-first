@@ -2,9 +2,11 @@ using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using LessonsFirst.App.Interop;
 using LessonsFirst.App.Services;
 using LessonsFirst.App.Tasks;
 using LessonsFirst.App.Windows;
+using Microsoft.Win32;
 
 namespace LessonsFirst.App;
 
@@ -20,6 +22,9 @@ public partial class App : Application
     private LockService _lockService = null!;
     private TrayIcon? _tray;
     private LockWindow? _lockWindow;
+    private readonly List<CoverWindow> _covers = new();
+    private List<Win32.MonitorBounds> _secondaryMonitors = new();
+    private string _coverSignature = "";
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -43,6 +48,7 @@ public partial class App : Application
         _lockService = new LockService();
         _lockService.LockRequested += ShowLock;
         _lockService.Start();
+        SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
 
         CreateTray();
         SyncAutostart();
@@ -91,9 +97,13 @@ public partial class App : Application
 
     public void ShowLock()
     {
+        EnsureCovers();
+        ShowCovers();
+
         if (_lockWindow is null)
         {
             _lockWindow = new LockWindow(_settings, _auth, _tasks);
+            _lockWindow.Unlocked += HideCovers;
             _lockWindow.Show();
         }
         else
@@ -102,6 +112,50 @@ public partial class App : Application
             _lockWindow.Show();
             _lockWindow.Activate();
         }
+    }
+
+    /// <summary>Пересоздаёт заглушки, если состав/расположение дополнительных мониторов изменился.</summary>
+    private void EnsureCovers()
+    {
+        var secondary = Win32.GetMonitors().Where(m => !m.IsPrimary).ToList();
+        var signature = string.Join("|", secondary.Select(m => $"{m.X},{m.Y},{m.Width},{m.Height}"));
+        if (signature == _coverSignature)
+            return;
+
+        foreach (var cover in _covers)
+            cover.AllowClose();
+        _covers.Clear();
+
+        _secondaryMonitors = secondary;
+        _coverSignature = signature;
+        foreach (var _ in secondary)
+            _covers.Add(new CoverWindow());
+    }
+
+    private void ShowCovers()
+    {
+        for (var i = 0; i < _covers.Count && i < _secondaryMonitors.Count; i++)
+        {
+            var m = _secondaryMonitors[i];
+            _covers[i].ShowCover(m.X, m.Y, m.Width, m.Height);
+        }
+    }
+
+    private void HideCovers()
+    {
+        foreach (var cover in _covers)
+            cover.HideCover();
+    }
+
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            _coverSignature = ""; // форсируем пересборку под новую топологию
+            EnsureCovers();
+            if (_lockWindow is { IsVisible: true })
+                ShowCovers();
+        });
     }
 
     private void OpenSettings()
@@ -131,6 +185,10 @@ public partial class App : Application
 
     private void ExitApp()
     {
+        SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
+        foreach (var cover in _covers)
+            cover.AllowClose();
+        _covers.Clear();
         _lockService.Dispose();
         _tray?.Dispose();
         _updater.Dispose();
