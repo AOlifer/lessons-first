@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Read version from csproj
+        id: ver
+        shell: pwsh
+        run: |
+          $version = (Select-Xml -Path "src/LessonsFirst.App/LessonsFirst.App.csproj" -XPath "//Version").Node.InnerText
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing version $version"
+
+      - name: Publish single-file exe
+        run: >
+          dotnet publish src/LessonsFirst.App/LessonsFirst.App.csproj
+          -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+          -o publish
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: "Сначала уроки! v${{ steps.ver.outputs.version }}"
+          generate_release_notes: true
+          files: publish/LessonsFirst.exe
