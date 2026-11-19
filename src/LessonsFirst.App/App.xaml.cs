@@ -13,8 +13,10 @@ namespace LessonsFirst.App;
 public partial class App : Application
 {
     private const string MutexName = "LessonsFirst_SingleInstance_3F1D";
+    private const string ShowLockEventName = "LessonsFirst_ShowLock_Event";
 
     private Mutex? _mutex;
+    private EventWaitHandle? _showLockSignal;
     private SettingsService _settings = null!;
     private AuthService _auth = null!;
     private TaskProvider _tasks = null!;
@@ -47,11 +49,31 @@ public partial class App : Application
         _mutex = new Mutex(true, MutexName, out var isFirstInstance);
         if (!isFirstInstance)
         {
-            // Уже запущено: единственный экземпляр должен показать замок.
-            AppLog.Write("Повторный запуск — выходим (один экземпляр).");
+            // Уже запущено: просим живой экземпляр показать замок и выходим.
+            try
+            {
+                if (EventWaitHandle.TryOpenExisting(ShowLockEventName, out var existing))
+                {
+                    existing.Set();
+                    existing.Dispose();
+                }
+            }
+            catch
+            {
+                // Не удалось сигнализировать — просто выходим.
+            }
+
+            AppLog.Write("Повторный запуск — сигнализируем живому экземпляру и выходим.");
             Shutdown();
             return;
         }
+
+        // Сигнал «покажи замок» от повторных запусков и от планировщика.
+        _showLockSignal = new EventWaitHandle(false, EventResetMode.AutoReset, ShowLockEventName);
+        System.Threading.ThreadPool.RegisterWaitForSingleObject(
+            _showLockSignal,
+            (_, _) => Dispatcher.BeginInvoke(ShowLock),
+            null, -1, executeOnlyOnce: false);
 
         _settings = new SettingsService();
         _auth = new AuthService(_settings);
