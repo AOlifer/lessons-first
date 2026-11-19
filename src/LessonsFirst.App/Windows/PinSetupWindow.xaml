@@ -5,26 +5,33 @@
         Width="460" SizeToContent="Height"
         WindowStyle="ToolWindow" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" Topmost="True"
-        Background="#FF182747" KeyDown="Window_KeyDown">
+        Background="{StaticResource MidnightBrush}"
+        Icon="/Assets/app-icon-256.png"
+        KeyDown="Window_KeyDown">
     <StackPanel Margin="32">
-        <TextBlock Text="Добро пожаловать!" FontSize="26" FontWeight="Bold" Foreground="White"/>
-        <TextBlock FontSize="15" Foreground="#B3C7EE" TextWrapping="Wrap" Margin="0,10,0,4"
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Image Source="/Assets/brand-mark-dark.png" Height="40" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <TextBlock Text="Добро пожаловать!" FontSize="24" FontWeight="Bold"
+                       Foreground="{StaticResource PaperBrush}" VerticalAlignment="Center" Margin="14,0,0,0"/>
+        </StackPanel>
+
+        <TextBlock FontSize="15" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,4,0,4"
                    Text="Это приложение просит ребёнка решить несколько школьных задач после включения компьютера."/>
-        <TextBlock FontSize="15" Foreground="#B3C7EE" TextWrapping="Wrap" Margin="0,0,0,18"
+        <TextBlock FontSize="15" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,18"
                    Text="Придумайте PIN родителя — по нему вы будете обходить задачи и менять настройки."/>
 
-        <TextBlock Text="PIN родителя (минимум 4 символа)" FontSize="14" Foreground="#B3C7EE"/>
+        <TextBlock Text="PIN родителя (минимум 4 символа)" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
         <PasswordBox x:Name="PinBox" Height="44" FontSize="20" Margin="0,6,0,14"
-                     Background="#FF101A33" Foreground="White" BorderBrush="#FF3B6FE0"
-                     BorderThickness="2" CaretBrush="White"/>
+                     Background="#FF151B38" Foreground="{StaticResource PaperBrush}" BorderBrush="{StaticResource PeriwinkleBrush}"
+                     BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
 
-        <TextBlock Text="Повторите PIN" FontSize="14" Foreground="#B3C7EE"/>
+        <TextBlock Text="Повторите PIN" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
         <PasswordBox x:Name="PinRepeatBox" Height="44" FontSize="20" Margin="0,6,0,14"
-                     Background="#FF101A33" Foreground="White" BorderBrush="#FF3B6FE0"
-                     BorderThickness="2" CaretBrush="White"/>
+                     Background="#FF151B38" Foreground="{StaticResource PaperBrush}" BorderBrush="{StaticResource PeriwinkleBrush}"
+                     BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
 
-        <TextBlock x:Name="ErrorText" Text="" FontSize="14" Foreground="#FFFF5252" Margin="0,0,0,10" TextWrapping="Wrap"/>
+        <TextBlock x:Name="ErrorText" Text="" FontSize="14" Foreground="{StaticResource DangerBrush}" Margin="0,0,0,10" TextWrapping="Wrap"/>
 
-        <Button Content="Готово" Height="46" FontSize="19" Click="Save_Click"/>
+        <Button Content="Готово" Height="46" FontSize="19" Background="{StaticResource LimeBrush}" Foreground="#FF151B38" Click="Save_Click"/>
     </StackPanel>
 </Window>

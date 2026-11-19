@@ -182,7 +182,7 @@ public partial class LockWindow : Window
         if (correct)
         {
             _correctCount++;
-            FeedbackText.Foreground = (Brush)FindResource("SuccessBrush");
+            FeedbackText.Foreground = (Brush)FindResource("LimeBrush");
             FeedbackText.Text = _correctCount >= _settings.Settings.RequiredCorrect
                 ? "Отлично! Всё решено!"
                 : "✓ Верно!";

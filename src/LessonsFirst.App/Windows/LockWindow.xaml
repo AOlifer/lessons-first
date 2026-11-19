@@ -8,92 +8,99 @@
         Topmost="True"
         WindowStartupLocation="Manual"
         Focusable="True"
-        Background="#FF101A33"
+        Background="{StaticResource MidnightBrush}"
+        Icon="/Assets/app-icon-256.png"
         KeyDown="Window_KeyDown">
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <!-- Фон бренда: учебные символы, приглушённо под текст -->
+        <Image Source="/Assets/lessons-first-background.png"
+               Stretch="UniformToFill" Opacity="0.16"/>
 
-        <!-- Верх: заголовок -->
-        <StackPanel Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,40,0,16">
-            <TextBlock Text="🎓 Сначала уроки!"
-                       FontSize="44" FontWeight="Bold" Foreground="White"
-                       HorizontalAlignment="Center"/>
-            <TextBlock Text="Реши задачи — и компьютер твой!"
-                       FontSize="20" Foreground="#B3C7EE"
-                       HorizontalAlignment="Center" Margin="0,8,0,0"/>
-        </StackPanel>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <!-- Центр: задача -->
-        <Border Grid.Row="1" Background="#FF182747" CornerRadius="24" Padding="48,36"
-                MinWidth="700" MaxWidth="1100" Margin="24">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <!-- Верх: логотип бренда -->
+            <StackPanel Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,40,0,16">
+                <Image Source="/Assets/logo-dark.png" Height="72" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="Реши задачи — и компьютер твой!"
+                           FontSize="20" Foreground="{StaticResource MutedTextBrush}"
+                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            </StackPanel>
 
-                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,18">
-                    <Border Background="#FF3B6FE0" CornerRadius="14" Padding="14,5">
-                        <TextBlock x:Name="SubjectText" Text="Математика" FontSize="17" FontWeight="SemiBold" Foreground="White"/>
-                    </Border>
-                    <TextBlock x:Name="ProgressText" Text="Задача 1 из 5" FontSize="17" Foreground="#B3C7EE"
-                               VerticalAlignment="Center" Margin="14,0,0,0"/>
-                </StackPanel>
+            <!-- Центр: задача -->
+            <Border Grid.Row="1" Background="#E61F2749" CornerRadius="24" Padding="48,36"
+                    MinWidth="700" MaxWidth="1100" Margin="24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="1" x:Name="PromptText" Text="Сколько будет 2 + 2?"
-                           FontSize="34" FontWeight="SemiBold" Foreground="White"
-                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
-                           Margin="0,0,0,8"/>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,18">
+                        <Border Background="{StaticResource PeriwinkleBrush}" CornerRadius="14" Padding="14,5">
+                            <TextBlock x:Name="SubjectText" Text="Математика" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource PaperBrush}"/>
+                        </Border>
+                        <TextBlock x:Name="ProgressText" Text="Задача 1 из 5" FontSize="17" Foreground="{StaticResource MutedTextBrush}"
+                                   VerticalAlignment="Center" Margin="14,0,0,0"/>
+                    </StackPanel>
 
-                <TextBlock Grid.Row="2" x:Name="HintText" Text="" FontSize="16" FontStyle="Italic"
-                           Foreground="#8FA3C8" HorizontalAlignment="Center" TextWrapping="Wrap"
-                           Margin="0,0,0,18"/>
+                    <TextBlock Grid.Row="1" x:Name="PromptText" Text="Сколько будет 2 + 2?"
+                               FontSize="34" FontWeight="SemiBold" Foreground="{StaticResource PaperBrush}"
+                               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                               Margin="0,0,0,8"/>
 
-                <!-- Варианты ответа (русский) -->
-                <WrapPanel Grid.Row="3" x:Name="OptionsPanel" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <TextBlock Grid.Row="2" x:Name="HintText" Text="" FontSize="16" FontStyle="Italic"
+                               Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" TextWrapping="Wrap"
+                               Margin="0,0,0,18"/>
 
-                <!-- Ввод ответа (математика) -->
-                <StackPanel Grid.Row="4" x:Name="InputPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-                    <TextBox x:Name="AnswerBox" Width="260" Height="58" FontSize="28" TextAlignment="Center"
-                             VerticalContentAlignment="Center" Background="#FF101A33" Foreground="White"
-                             BorderBrush="#FF3B6FE0" BorderThickness="2" CaretBrush="White"/>
-                    <Button x:Name="SubmitButton" Content="Ответить" Height="58" MinWidth="150" FontSize="22"
-                            Margin="14,0,0,0" Click="Submit_Click"/>
-                </StackPanel>
+                    <!-- Варианты ответа (русский) -->
+                    <WrapPanel Grid.Row="3" x:Name="OptionsPanel" HorizontalAlignment="Center" Margin="0,0,0,4"/>
 
-                <TextBlock Grid.Row="5" x:Name="FeedbackText" Text="" FontSize="24" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" Margin="0,18,0,0"/>
+                    <!-- Ввод ответа (математика) -->
+                    <StackPanel Grid.Row="4" x:Name="InputPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+                        <TextBox x:Name="AnswerBox" Width="260" Height="58" FontSize="28" TextAlignment="Center"
+                                 VerticalContentAlignment="Center" Background="#FF151B38" Foreground="{StaticResource PaperBrush}"
+                                 BorderBrush="{StaticResource PeriwinkleBrush}" BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                        <Button x:Name="SubmitButton" Content="Ответить" Height="58" MinWidth="150" FontSize="22"
+                                Margin="14,0,0,0" Click="Submit_Click"/>
+                    </StackPanel>
 
-                <!-- PIN для родителей -->
-                <StackPanel Grid.Row="6" x:Name="PinPanel" Orientation="Horizontal" HorizontalAlignment="Center"
-                            Margin="0,20,0,0" Visibility="Collapsed">
-                    <PasswordBox x:Name="PinBox" Width="240" Height="48" FontSize="22"
-                                 VerticalContentAlignment="Center" Background="#FF101A33" Foreground="White"
-                                 BorderBrush="#FF3B6FE0" BorderThickness="2" CaretBrush="White"/>
-                    <Button x:Name="PinUnlockButton" Content="Войти" Height="48" MinWidth="110" FontSize="19"
-                            Margin="12,0,0,0" Click="PinUnlock_Click"/>
-                    <Button x:Name="PinCancelButton" Content="Назад" Height="48" MinWidth="110" FontSize="19"
-                            Margin="12,0,0,0" Background="#FF2A3A5F" Click="PinCancel_Click"/>
-                </StackPanel>
-            </Grid>
-        </Border>
+                    <TextBlock Grid.Row="5" x:Name="FeedbackText" Text="" FontSize="24" FontWeight="SemiBold"
+                               Foreground="{StaticResource PaperBrush}"
+                               HorizontalAlignment="Center" Margin="0,18,0,0"/>
 
-        <!-- Низ: вход для родителей -->
-        <StackPanel Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,20,0,40">
-            <Button x:Name="ParentButton" Content="Вход для родителей" FontSize="15"
-                    Background="Transparent" Foreground="#8FA3C8" BorderBrush="#4D8FA3C8"
-                    Padding="16,6" Click="ParentLogin_Click"/>
-        </StackPanel>
+                    <!-- PIN для родителей -->
+                    <StackPanel Grid.Row="6" x:Name="PinPanel" Orientation="Horizontal" HorizontalAlignment="Center"
+                                Margin="0,20,0,0" Visibility="Collapsed">
+                        <PasswordBox x:Name="PinBox" Width="240" Height="48" FontSize="22"
+                                     VerticalContentAlignment="Center" Background="#FF151B38" Foreground="{StaticResource PaperBrush}"
+                                     BorderBrush="{StaticResource PeriwinkleBrush}" BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+                        <Button x:Name="PinUnlockButton" Content="Войти" Height="48" MinWidth="110" FontSize="19"
+                                Margin="12,0,0,0" Click="PinUnlock_Click"/>
+                        <Button x:Name="PinCancelButton" Content="Назад" Height="48" MinWidth="110" FontSize="19"
+                                Margin="12,0,0,0" Background="#FF2A3358" Click="PinCancel_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Низ: вход для родителей -->
+            <StackPanel Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,20,0,40">
+                <Button x:Name="ParentButton" Content="Вход для родителей" FontSize="15"
+                        Background="#337775F5" Foreground="{StaticResource MutedTextBrush}"
+                        BorderBrush="#4D9AA3C7" BorderThickness="1"
+                        Padding="16,6" Click="ParentLogin_Click"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

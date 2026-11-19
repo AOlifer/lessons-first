@@ -12,7 +12,16 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SatelliteResourceLanguages>ru</SatelliteResourceLanguages>
     <DebugType>embedded</DebugType>
+    <ApplicationIcon>..\..\lessons-first-brand\icons\lessons-first.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="..\..\lessons-first-brand\icons\lessons-first.ico" Link="Assets\lessons-first.ico"/>
+    <Resource Include="..\..\lessons-first-brand\icons\app-icon-256.png" Link="Assets\app-icon-256.png"/>
+    <Resource Include="..\..\lessons-first-brand\icons\brand-mark-dark.png" Link="Assets\brand-mark-dark.png"/>
+    <Resource Include="..\..\lessons-first-brand\icons\logo-dark.png" Link="Assets\logo-dark.png"/>
+    <Resource Include="..\..\lessons-first-brand\backgrounds\lessons-first-background.png" Link="Assets\lessons-first-background.png"/>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="9.0.0" />

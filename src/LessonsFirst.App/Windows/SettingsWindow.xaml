@@ -4,42 +4,49 @@
         Title="Сначала уроки! — настройки"
         Width="520" SizeToContent="Height"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        Background="#FF182747" KeyDown="Window_KeyDown">
+        Background="{StaticResource MidnightBrush}"
+        Icon="/Assets/app-icon-256.png"
+        KeyDown="Window_KeyDown">
 
     <StackPanel Margin="28">
         <!-- Экран подтверждения PIN -->
         <StackPanel x:Name="PinGatePanel">
-            <TextBlock Text="Настройки доступны родителю" FontSize="22" FontWeight="Bold" Foreground="White"/>
-            <TextBlock Text="Введите PIN родителя" FontSize="14" Foreground="#B3C7EE" Margin="0,12,0,6"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <Image Source="/Assets/brand-mark-dark.png" Height="36" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="Настройки доступны родителю" FontSize="20" FontWeight="Bold"
+                           Foreground="{StaticResource PaperBrush}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+            </StackPanel>
+            <TextBlock Text="Введите PIN родителя" FontSize="14" Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,6"/>
             <PasswordBox x:Name="PinBox" Height="44" FontSize="20" Margin="0,0,0,12"
-                         Background="#FF101A33" Foreground="White" BorderBrush="#FF3B6FE0"
-                         BorderThickness="2" CaretBrush="White"/>
-            <TextBlock x:Name="GateErrorText" Text="" Foreground="#FFFF5252" FontSize="14" Margin="0,0,0,8"/>
+                         Background="#FF151B38" Foreground="{StaticResource PaperBrush}" BorderBrush="{StaticResource PeriwinkleBrush}"
+                         BorderThickness="2" CaretBrush="{StaticResource PaperBrush}"/>
+            <TextBlock x:Name="GateErrorText" Text="" Foreground="{StaticResource DangerBrush}" FontSize="14" Margin="0,0,0,8"/>
             <Button Content="Продолжить" Height="44" FontSize="17" Click="Gate_Click"/>
         </StackPanel>
 
         <!-- Сами настройки -->
         <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
-            <TextBlock Text="Настройки" FontSize="24" FontWeight="Bold" Foreground="White" Margin="0,0,0,16"/>
+            <TextBlock Text="Настройки" FontSize="22" FontWeight="Bold" Foreground="{StaticResource PaperBrush}" Margin="0,0,0,16"/>
 
-            <TextBlock Text="Класс (сложность задач)" FontSize="14" Foreground="#B3C7EE"/>
+            <TextBlock Text="Класс (сложность задач)" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
             <ComboBox x:Name="GradeBox" Height="40" FontSize="16" Margin="0,6,0,14"/>
 
-            <TextBlock Text="Сколько правильных ответов для разблокировки" FontSize="14" Foreground="#B3C7EE"/>
+            <TextBlock Text="Сколько правильных ответов для разблокировки" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
             <ComboBox x:Name="RequiredBox" Height="40" FontSize="16" Margin="0,6,0,14"/>
 
             <CheckBox x:Name="AutostartBox" Content="Запускаться вместе с Windows"
-                      FontSize="15" Foreground="White" Margin="0,0,0,18"/>
+                      FontSize="15" Foreground="{StaticResource PaperBrush}" Margin="0,0,0,18"/>
 
-            <TextBlock Text="Обновления" FontSize="14" Foreground="#B3C7EE"/>
+            <TextBlock Text="Обновления" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
             <StackPanel Orientation="Horizontal" Margin="0,6,0,6">
                 <Button x:Name="CheckUpdateButton" Content="Проверить обновления" Height="40" FontSize="15"
                         Click="CheckUpdate_Click"/>
-                <TextBlock x:Name="UpdateStatusText" Text="" FontSize="14" Foreground="#B3C7EE"
+                <TextBlock x:Name="UpdateStatusText" Text="" FontSize="14" Foreground="{StaticResource MutedTextBrush}"
                            VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap"/>
             </StackPanel>
 
-            <Button Content="Сохранить" Height="46" FontSize="18" Margin="0,16,0,0" Click="Save_Click"/>
+            <Button Content="Сохранить" Height="46" FontSize="18" Margin="0,16,0,0"
+                    Background="{StaticResource LimeBrush}" Foreground="#FF151B38" Click="Save_Click"/>
         </StackPanel>
     </StackPanel>
 </Window>

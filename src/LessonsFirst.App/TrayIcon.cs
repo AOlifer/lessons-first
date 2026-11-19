@@ -1,4 +1,3 @@
-using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -44,11 +43,8 @@ internal sealed class TrayIcon : IDisposable
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
 
-    [DllImport("user32.dll", EntryPoint = "DestroyIcon")]
-    private static extern bool DestroyIcon(IntPtr hIcon);
-
     private readonly HwndSource _source;
-    private readonly IntPtr _iconHandle;
+    private readonly System.Drawing.Icon _icon;
     private readonly ContextMenu _menu;
     private NOTIFYICONDATA _data;
 
@@ -64,14 +60,14 @@ internal sealed class TrayIcon : IDisposable
         _source = new HwndSource(parameters);
         _source.AddHook(WndProc);
 
-        _iconHandle = CreateIcon();
+        _icon = CreateIcon();
         _data = new NOTIFYICONDATA
         {
             hWnd = _source.Handle,
             uID = 1,
             uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
             uCallbackMessage = WM_TRAYICON,
-            hIcon = _iconHandle,
+            hIcon = _icon.Handle,
             szTip = "Сначала уроки!",
         };
         Shell_NotifyIcon(NIM_ADD, ref _data);
@@ -106,24 +102,19 @@ internal sealed class TrayIcon : IDisposable
         return IntPtr.Zero;
     }
 
-    private static IntPtr CreateIcon()
+    private static System.Drawing.Icon CreateIcon()
     {
-        using var bitmap = new Bitmap(32, 32);
-        using (var g = Graphics.FromImage(bitmap))
-        {
-            g.Clear(Color.FromArgb(37, 64, 143));
-            using var font = new Font("Segoe UI", 13, System.Drawing.FontStyle.Bold);
-            var size = g.MeasureString("У!", font);
-            g.DrawString("У!", font, Brushes.White, (32 - size.Width) / 2, (32 - size.Height) / 2 + 1);
-        }
-
-        return bitmap.GetHicon();
+        // Брендовая иконка из ресурсов (lessons-first.ico, 9 размеров).
+        var uri = new Uri("pack://application:,,,/Assets/lessons-first.ico");
+        var resource = System.Windows.Application.GetResourceStream(uri)
+            ?? throw new InvalidOperationException("Не найден Assets/lessons-first.ico");
+        return new System.Drawing.Icon(resource.Stream);
     }
 
     public void Dispose()
     {
         Shell_NotifyIcon(NIM_DELETE, ref _data);
-        DestroyIcon(_iconHandle);
+        _icon.Dispose();
         _source.RemoveHook(WndProc);
         _source.Dispose();
     }

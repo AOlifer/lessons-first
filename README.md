@@ -41,6 +41,15 @@
 замок можно снять через Диспетчер задач (Ctrl+Shift+Esc до запуска замка),
 безопасный режим или другой аккаунт Windows.
 
+## Брендинг
+
+Графика приложения живёт в каталоге [`lessons-first-brand/`](lessons-first-brand/) —
+концепция «раскрытая книга и ключ», палитра Midnight `#151B38` / Periwinkle `#7775F5` /
+Paper `#F7F6F2` / Lime `#D7F561`. Сборка берёт ресурсы прямо оттуда: иконка exe
+(`icons/lessons-first.ico`), иконка трея, логотип и знак на экранах, фоновая
+иллюстрация замка (`backgrounds/lessons-first-background.png`). Описание набора —
+`lessons-first-brand/README.txt`.
+
 ## Разработка
 
 - C#, WPF, .NET 9. Ветки: `develop` — разработка, `master` — релизы
