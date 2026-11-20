@@ -144,4 +144,68 @@ public class SessionProgressTests
         Assert.Equal(0, progress.Correct);
         Assert.False(progress.Completed);
     }
+
+    [Fact]
+    public void Mistake_AddsOneTaskToRequired()
+    {
+        var progress = new SessionProgress(3);
+        Assert.Equal(3, progress.Required);
+
+        Assert.True(progress.RegisterMistake(Guid.NewGuid()));
+        Assert.Equal(4, progress.Required);
+        Assert.False(progress.Completed);
+    }
+
+    [Fact]
+    public void FailedTask_NeverCounted_EvenAfterCorrect()
+    {
+        var progress = new SessionProgress(2);
+        var taskId = Guid.NewGuid();
+        progress.RegisterMistake(taskId);
+
+        Assert.False(progress.RegisterCorrect(taskId));
+        Assert.Equal(0, progress.Correct);
+        Assert.Equal(3, progress.Required);
+        Assert.False(progress.Completed);
+    }
+
+    [Fact]
+    public void RepeatedMistakesOnSameTask_AddOnlyOne()
+    {
+        var progress = new SessionProgress(2);
+        var taskId = Guid.NewGuid();
+
+        Assert.True(progress.RegisterMistake(taskId));
+        Assert.False(progress.RegisterMistake(taskId));
+
+        Assert.Equal(3, progress.Required);
+    }
+
+    [Fact]
+    public void Completion_NeedsExtraTaskPerEachFailed()
+    {
+        var progress = new SessionProgress(2);
+        progress.RegisterMistake(Guid.NewGuid()); // цель стала 3
+        progress.RegisterCorrect(Guid.NewGuid());
+        progress.RegisterCorrect(Guid.NewGuid());
+
+        Assert.False(progress.Completed); // 2 из 3: провал добавил задачу
+
+        progress.RegisterCorrect(Guid.NewGuid());
+        Assert.True(progress.Completed);
+        Assert.Equal(3, progress.Correct);
+        Assert.Equal(3, progress.Required);
+    }
+
+    [Fact]
+    public void Reset_ClearsFailuresToo()
+    {
+        var progress = new SessionProgress(2);
+        var taskId = Guid.NewGuid();
+        progress.RegisterMistake(taskId);
+        progress.Reset();
+
+        Assert.Equal(2, progress.Required);
+        Assert.True(progress.RegisterCorrect(taskId)); // после сброса задание снова зачитывается
+    }
 }

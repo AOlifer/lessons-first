@@ -13,8 +13,10 @@ namespace LessonsFirst.App.Windows;
 /// <summary>
 /// Полноэкранный несворачиваемый замок: закрывает все мониторы, глушит системные
 /// горячие клавиши, требует N правильных ответов или PIN родителя.
-/// Математика: неверный ответ оставляет то же задание; некорректный ввод
-/// подсказывает формат; один TaskId засчитывается один раз.
+/// Задание с ошибкой не зачитывается никогда (даже после верного ответа) и
+/// добавляет одну задачу к цели; математика при этом оставляет то же задание,
+/// русский даёт новое. Некорректный ввод подсказывает формат и не считается
+/// ошибкой; один TaskId засчитывается один раз.
 /// </summary>
 public partial class LockWindow : Window
 {
@@ -310,18 +312,21 @@ public partial class LockWindow : Window
 
             case AnswerCheckResult.Wrong:
                 _mistakes++;
+                _progress.RegisterMistake(task.TaskId);
                 FeedbackText.Foreground = (Brush)FindResource("DangerBrush");
+                ProgressText.Text = $"Верных ответов: {_progress.Correct} из {_progress.Required}";
 
                 if (isMath)
                 {
-                    // Математика: тот же вопрос остаётся для повторной попытки, прогресс не меняется.
-                    FeedbackText.Text = "✗ Неверно, попробуй ещё раз. Задание то же.";
+                    // Математика: то же задание остаётся для повторной попытки, но уже
+                    // не зачтётся — цель выросла на одну задачу.
+                    FeedbackText.Text = "✗ Неверно, попробуй ещё раз. Это задание уже не зачтётся — нужно будет решить ещё одно.";
                     FocusFirstField();
                     return;
                 }
 
-                // Русский язык: новая задача (существующее поведение).
-                FeedbackText.Text = "✗ Неверно. Попробуй другую задачу!";
+                // Русский язык: новая задача, проваленная не зачитывается.
+                FeedbackText.Text = "✗ Неверно. Задание не зачтётся — попробуй другое!";
                 _answeringLocked = true;
                 await Task.Delay(900);
                 if (!_unlocked)
@@ -332,11 +337,13 @@ public partial class LockWindow : Window
                 return;
         }
 
-        // Верный ответ: зачёт ровно один раз на TaskId.
+        // Верный ответ: зачёт ровно один раз на TaskId; проваленное ранее — без зачёта.
         _answeringLocked = true;
-        _progress.RegisterCorrect(task.TaskId);
+        var counted = _progress.RegisterCorrect(task.TaskId);
         FeedbackText.Foreground = (Brush)FindResource("LimeBrush");
-        FeedbackText.Text = _progress.Completed ? "Отлично! Всё решено!" : "✓ Верно!";
+        FeedbackText.Text = _progress.Completed
+            ? "Отлично! Всё решено!"
+            : counted ? "✓ Верно!" : "✓ Верно, но из-за ошибки задание не зачитывается.";
         ProgressText.Text = $"Верных ответов: {_progress.Correct} из {_progress.Required}";
 
         await Task.Delay(900);
