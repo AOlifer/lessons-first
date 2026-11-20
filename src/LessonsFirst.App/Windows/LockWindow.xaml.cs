@@ -14,10 +14,12 @@ namespace LessonsFirst.App.Windows;
 /// Полноэкранный несворачиваемый замок: закрывает все мониторы, глушит системные
 /// горячие клавиши, требует N правильных ответов или PIN родителя.
 /// Неверный ответ (любой предмет) оставляет то же задание для повторной попытки
-/// и показывает подсказку о способе решения; накопленные верные ответы не меняются.
-/// Верный ответ увеличивает прогресс ровно один раз (один TaskId — один зачёт);
-/// пояснение шаблона (проверочное слово) показывается после верного ответа.
-/// Некорректный ввод подсказывает формат и не считается ошибкой.
+/// и показывает подсказку о способе решения; задание с ошибкой больше не
+/// зачитывается (даже после верного ответа) и добавляет одну задачу к цели:
+/// сколько заданий не удалось решить с первого раза — столько дополнительных.
+/// Верный ответ без ошибок увеличивает прогресс ровно один раз (один TaskId —
+/// один зачёт); пояснение шаблона (проверочное слово) показывается после
+/// верного ответа. Некорректный ввод подсказывает формат и не считается ошибкой.
 /// </summary>
 public partial class LockWindow : Window
 {
@@ -30,7 +32,6 @@ public partial class LockWindow : Window
     private SessionProgress _progress = new(5);
 
     private SchoolTask _current = null!;
-    private int _mistakes;
     private DateTime _lockedAt;
     private bool _answeringLocked;   // ждём перехода к следующему заданию
     private bool _unlocked;
@@ -114,7 +115,6 @@ public partial class LockWindow : Window
 
     public void ResetProgress()
     {
-        _mistakes = 0;
         _lockedAt = DateTime.Now;
         _unlocked = false;
         _progress = new SessionProgress(_settings.Settings.RequiredCorrect);
@@ -546,12 +546,11 @@ public partial class LockWindow : Window
                 return; // прогресс не меняется, задание остаётся
 
             case AnswerCheckResult.Wrong:
-                // Любой предмет: то же задание остаётся для повторной попытки;
-                // накопленные верные ответы не меняются. Подсказка о способе решения.
-                _mistakes++;
-                _progress.RegisterMistake();
+                // Любой предмет: то же задание остаётся для повторной попытки, но уже
+                // не зачтётся — цель выросла на одну задачу. Подсказка о способе решения.
+                _progress.RegisterMistake(task.TaskId);
                 FeedbackText.Foreground = (Brush)FindResource("DangerBrush");
-                FeedbackText.Text = "✗ Неверно, попробуй ещё раз. Посмотри на подсказку сверху.";
+                FeedbackText.Text = "✗ Неверно, попробуй ещё раз. Это задание уже не зачтётся — нужно будет решить ещё одно. Подсказка сверху.";
                 if (!string.IsNullOrEmpty(task.Hint))
                 {
                     HintText.Text = task.Hint;
@@ -562,13 +561,15 @@ public partial class LockWindow : Window
                 return;
         }
 
-        // Верный ответ: зачёт ровно один раз на TaskId.
+        // Верный ответ: зачёт ровно один раз на TaskId; проваленное ранее — без зачёта.
         _answeringLocked = true;
         var counted = _progress.RegisterCorrect(task.TaskId);
         FeedbackText.Foreground = (Brush)FindResource("LimeBrush");
         FeedbackText.Text = _progress.Completed
             ? $"Отлично! Всё решено!{ExplanationSuffix(task)}"
-            : $"✓ Верно!{ExplanationSuffix(task)}";
+            : counted
+                ? $"✓ Верно!{ExplanationSuffix(task)}"
+                : $"✓ Верно, но из-за ошибки задание не зачитывается.{ExplanationSuffix(task)}";
         ProgressText.Text = $"Верных ответов: {_progress.Correct} из {_progress.Required}";
 
         await Task.Delay(900);
@@ -629,7 +630,7 @@ public partial class LockWindow : Window
         var elapsed = DateTime.Now - _lockedAt;
         var success = new SuccessWindow
         {
-            StatsText = { Text = $"Верных ответов: {_progress.Correct} · Ошибок: {_mistakes} · Время: {elapsed.Minutes:00}:{elapsed.Seconds:00}" },
+            StatsText = { Text = $"Верных ответов: {_progress.Correct} из {_progress.Required} · Ошибок: {_progress.Mistakes} · Время: {elapsed.Minutes:00}:{elapsed.Seconds:00}" },
         };
         success.Closed += (_, _) => Unlocked?.Invoke();
         // Сначала показываем экран успеха (замок ещё закрывает экран), только потом прячем замок —

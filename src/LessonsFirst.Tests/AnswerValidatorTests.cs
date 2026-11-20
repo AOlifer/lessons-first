@@ -255,46 +255,76 @@ public class SessionProgressTests
     }
 
     [Fact]
-    public void Mistake_DoesNotChangeProgressOrGoal()
+    public void Mistake_AddsOneTaskToGoal_AndCountsStats()
     {
         var progress = new SessionProgress(3);
-        progress.RegisterMistake();
-        progress.RegisterMistake();
-        progress.RegisterMistake();
+        progress.RegisterMistake(Guid.NewGuid());
+        progress.RegisterMistake(Guid.NewGuid());
+        progress.RegisterMistake(Guid.NewGuid());
 
-        Assert.Equal(3, progress.Required);
+        Assert.Equal(6, progress.Required); // по одной задаче за каждый провал
         Assert.Equal(0, progress.Correct);
         Assert.Equal(3, progress.Mistakes);
         Assert.False(progress.Completed);
     }
 
     [Fact]
-    public void Task_CountedAfterMistakeOnIt()
+    public void FailedTask_NeverCounted_EvenAfterCorrectAnswer()
     {
-        // Тот же вопрос остаётся: верный ответ после ошибки засчитывается.
+        // То же задание остаётся для повторных попыток, но не зачитывается никогда.
         var progress = new SessionProgress(2);
         var taskId = Guid.NewGuid();
-        progress.RegisterMistake();
+        progress.RegisterMistake(taskId);
 
-        Assert.True(progress.RegisterCorrect(taskId));
-        Assert.Equal(1, progress.Correct);
-        Assert.Equal(2, progress.Required);
+        Assert.False(progress.RegisterCorrect(taskId));
+        Assert.Equal(0, progress.Correct);
+        Assert.Equal(3, progress.Required);
+        Assert.False(progress.Completed);
     }
 
     [Fact]
-    public void Completion_AtExactlyN()
+    public void RepeatedMistakesOnSameTask_AddOnlyOne()
+    {
+        var progress = new SessionProgress(2);
+        var taskId = Guid.NewGuid();
+
+        Assert.True(progress.RegisterMistake(taskId));
+        Assert.False(progress.RegisterMistake(taskId)); // повторная ошибка — та же задача
+
+        Assert.Equal(3, progress.Required);
+        Assert.Equal(2, progress.Mistakes);
+    }
+
+    [Fact]
+    public void Completion_NeedsExtraTaskPerEachFailed()
     {
         var progress = new SessionProgress(3);
-        progress.RegisterMistake();
+        var failed = Guid.NewGuid();
+        progress.RegisterMistake(failed); // цель стала 4
+
+        Assert.False(progress.RegisterCorrect(failed)); // проваленное не зачитывается
+        progress.RegisterCorrect(Guid.NewGuid());
         progress.RegisterCorrect(Guid.NewGuid());
         progress.RegisterCorrect(Guid.NewGuid());
 
-        Assert.False(progress.Completed);
+        Assert.False(progress.Completed); // 3 из 4: провал добавил задачу
 
         progress.RegisterCorrect(Guid.NewGuid());
         Assert.True(progress.Completed);
-        Assert.Equal(3, progress.Correct);
-        Assert.Equal(3, progress.Required);
+        Assert.Equal(4, progress.Correct);
+        Assert.Equal(4, progress.Required);
         Assert.Equal(1, progress.Mistakes);
+    }
+
+    [Fact]
+    public void Reset_ClearsFailuresToo()
+    {
+        var progress = new SessionProgress(2);
+        var taskId = Guid.NewGuid();
+        progress.RegisterMistake(taskId);
+        progress.Reset();
+
+        Assert.Equal(2, progress.Required);
+        Assert.True(progress.RegisterCorrect(taskId)); // после сброса задание снова зачитывается
     }
 }

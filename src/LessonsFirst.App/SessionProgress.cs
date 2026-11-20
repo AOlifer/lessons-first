@@ -2,18 +2,21 @@ namespace LessonsFirst.App;
 
 /// <summary>
 /// Прогресс сессии: N верных ответов для доступа (настройка родителя).
-/// Неверный ответ оставляет то же задание и не меняет прогресс; верный —
-/// увеличивает счётчик ровно один раз (один TaskId засчитывается однократно;
-/// повторный Enter, двойной клик и отложенные события не считаются).
-/// Цель N фиксирована и не растёт из-за ошибок.
+/// Задание, в котором была ошибка, не зачитывается никогда — даже после
+/// верного ответа — и добавляет одну задачу к цели: сколько заданий не удалось
+/// решить с первого раза, столько дополнительных и появится. Задание без
+/// ошибок засчитывается ровно один раз (один TaskId — один зачёт; повторный
+/// Enter, двойной клик и отложенные события не считаются).
 /// </summary>
 public sealed class SessionProgress
 {
     private readonly HashSet<Guid> _countedTaskIds = new();
+    private readonly HashSet<Guid> _failedTaskIds = new();
 
     public int InitialRequired { get; }
 
-    public int Required => InitialRequired;
+    /// <summary>Текущая цель: стартовое число задач + по одной за каждое проваленное с первого раза.</summary>
+    public int Required => InitialRequired + _failedTaskIds.Count;
 
     public int Correct { get; private set; }
 
@@ -24,13 +27,20 @@ public sealed class SessionProgress
 
     public SessionProgress(int initialRequired) => InitialRequired = initialRequired;
 
-    /// <summary>Зафиксировать неверный ответ: прогресс не меняется, задание остаётся.</summary>
-    public void RegisterMistake() => Mistakes++;
+    /// <summary>
+    /// Зафиксировать неверный ответ: задание больше не может быть зачтено, а цель
+    /// вырастет на одну задачу. false — задание уже было провалено ранее.
+    /// </summary>
+    public bool RegisterMistake(Guid taskId)
+    {
+        Mistakes++;
+        return _failedTaskIds.Add(taskId);
+    }
 
-    /// <summary>Засчитать верный ответ. false — уже зачтён или сессия завершена.</summary>
+    /// <summary>Засчитать верный ответ. false — уже зачтён, провален ранее или сессия завершена.</summary>
     public bool RegisterCorrect(Guid taskId)
     {
-        if (Completed || !_countedTaskIds.Add(taskId))
+        if (Completed || _failedTaskIds.Contains(taskId) || !_countedTaskIds.Add(taskId))
         {
             return false;
         }
@@ -44,5 +54,6 @@ public sealed class SessionProgress
         Correct = 0;
         Mistakes = 0;
         _countedTaskIds.Clear();
+        _failedTaskIds.Clear();
     }
 }
