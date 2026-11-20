@@ -64,9 +64,22 @@
                                Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" TextWrapping="Wrap"
                                Margin="0,0,0,18"/>
 
-                    <!-- Варианты ответа (русский язык) и знаки сравнения -->
+                    <!-- Варианты ответа (SingleChoice: выбор + «Проверить») и знаки сравнения -->
                     <WrapPanel Grid.Row="3" x:Name="OptionsPanel" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                     <WrapPanel Grid.Row="3" x:Name="ComparisonPanel" HorizontalAlignment="Center" Margin="0,0,0,4" Visibility="Collapsed"/>
+
+                    <!-- Выбор слов и расстановка запятых -->
+                    <StackPanel Grid.Row="4" x:Name="SelectionPanel" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="Collapsed">
+                        <WrapPanel x:Name="TokensPanel" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                        <Button x:Name="SelectionSubmitButton" Content="Проверить" Height="54" MinWidth="170" FontSize="21"
+                                HorizontalAlignment="Center" Click="SelectionSubmit_Click"/>
+                    </StackPanel>
+
+                    <!-- Подтверждение выбора варианта -->
+                    <StackPanel Grid.Row="4" x:Name="ChoiceConfirmPanel" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="Collapsed">
+                        <Button x:Name="ChoiceSubmitButton" Content="Проверить" Height="54" MinWidth="170" FontSize="21"
+                                Click="ChoiceSubmit_Click"/>
+                    </StackPanel>
 
                     <!-- Ввод: одно поле / дробь / пара множителей -->
                     <StackPanel Grid.Row="4" x:Name="InputPanel" HorizontalAlignment="Center" Margin="0,4,0,0">
