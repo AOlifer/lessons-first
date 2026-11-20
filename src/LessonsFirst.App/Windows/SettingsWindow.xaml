@@ -35,6 +35,11 @@
             <ComboBox x:Name="GradeBox" Height="40" FontSize="16" Margin="0,6,0,4"/>
             <TextBlock x:Name="GradeHintText" Text="" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,12" TextWrapping="Wrap"/>
 
+            <TextBlock Text="Предметы задач" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
+            <ComboBox x:Name="SubjectBox" Height="40" FontSize="16" Margin="0,6,0,4"/>
+            <TextBlock Text="Уровень и предметы фиксируются на сессию: изменения применятся к следующей."
+                       FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,14" TextWrapping="Wrap"/>
+
             <TextBlock Text="Сколько правильных ответов нужно для доступа" FontSize="14" Foreground="{StaticResource MutedTextBrush}"/>
             <ComboBox x:Name="RequiredBox" Height="40" FontSize="16" Margin="0,6,0,14"/>
 

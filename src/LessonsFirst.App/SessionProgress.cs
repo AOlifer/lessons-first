@@ -1,38 +1,36 @@
 namespace LessonsFirst.App;
 
 /// <summary>
-/// Прогресс сессии: N верных ответов для доступа. Задание, в котором была ошибка,
-/// не зачитывается никогда — даже после верного ответа — и увеличивает цель на
-/// одну задачу: сколько заданий не удалось решить с первого раза, столько
-/// дополнительных и добавится. Один TaskId засчитывается ровно один раз;
-/// повторная отправка и отложенные события старого задания не увеличивают счётчик.
+/// Прогресс сессии: N верных ответов для доступа (настройка родителя).
+/// Неверный ответ оставляет то же задание и не меняет прогресс; верный —
+/// увеличивает счётчик ровно один раз (один TaskId засчитывается однократно;
+/// повторный Enter, двойной клик и отложенные события не считаются).
+/// Цель N фиксирована и не растёт из-за ошибок.
 /// </summary>
 public sealed class SessionProgress
 {
     private readonly HashSet<Guid> _countedTaskIds = new();
-    private readonly HashSet<Guid> _failedTaskIds = new();
 
     public int InitialRequired { get; }
 
-    /// <summary>Текущая цель: стартовое число задач + по одной за каждое проваленное с первого раза.</summary>
-    public int Required => InitialRequired + _failedTaskIds.Count;
+    public int Required => InitialRequired;
 
     public int Correct { get; private set; }
+
+    /// <summary>Число неверных ответов за сессию (для статистики).</summary>
+    public int Mistakes { get; private set; }
 
     public bool Completed => Correct >= Required;
 
     public SessionProgress(int initialRequired) => InitialRequired = initialRequired;
 
-    /// <summary>
-    /// Зарегистрировать ошибку в задании: оно больше не может быть зачтено, а цель
-    /// вырастет на одну задачу. false — задание уже провалено ранее.
-    /// </summary>
-    public bool RegisterMistake(Guid taskId) => _failedTaskIds.Add(taskId);
+    /// <summary>Зафиксировать неверный ответ: прогресс не меняется, задание остаётся.</summary>
+    public void RegisterMistake() => Mistakes++;
 
-    /// <summary>Засчитать верный ответ. false — уже зачтён, провален ранее или сессия завершена.</summary>
+    /// <summary>Засчитать верный ответ. false — уже зачтён или сессия завершена.</summary>
     public bool RegisterCorrect(Guid taskId)
     {
-        if (Completed || _failedTaskIds.Contains(taskId) || !_countedTaskIds.Add(taskId))
+        if (Completed || !_countedTaskIds.Add(taskId))
         {
             return false;
         }
@@ -44,7 +42,7 @@ public sealed class SessionProgress
     public void Reset()
     {
         Correct = 0;
+        Mistakes = 0;
         _countedTaskIds.Clear();
-        _failedTaskIds.Clear();
     }
 }

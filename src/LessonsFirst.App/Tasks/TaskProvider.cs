@@ -1,10 +1,16 @@
 using LessonsFirst.App.Tasks.MathTasks;
+using LessonsFirst.App.Tasks.RussianTasks;
 
 namespace LessonsFirst.App.Tasks;
 
 /// <summary>
-/// Выдаёт задания, чередуя математику и русский язык (не больше двух подряд одного предмета).
-/// Математика — через MathEngine с перемешанным циклом шаблонов и дедупликацией.
+/// Выдаёт задания согласно предметному режиму родителя:
+/// — «Математика» / «Русский язык» — только один предмет;
+/// — «Смешанный» — перемешанными парами [Математика, Русский]: в каждой полной паре
+///   по одному заданию каждого предмета, следующая пара перемешивается заново.
+/// У каждого предмета — свой независимый перемешанный цикл TemplateId,
+/// который продвигается только при создании следующего задания этого предмета.
+/// Неверный ответ не вызывает Next(): текущее задание остаётся.
 /// </summary>
 public sealed class TaskProvider
 {
@@ -12,52 +18,71 @@ public sealed class TaskProvider
     private const string RussianSubject = "Русский язык";
 
     private readonly Random _rng;
-    private RussianGenerator _russian = null!;
+    private RussianEngine _russian = null!;
     private MathEngine _math = null!;
     private GradeBand _band;
-    private string? _lastSubject;
-    private int _lastSubjectStreak;
+    private SubjectMode _mode;
+    private readonly List<bool> _pair = new();
 
     public TaskProvider(Random? random = null)
     {
         _rng = random ?? new Random();
-        Configure(GradeBand.Grades34);
+        Configure(GradeBand.Grades34, SubjectMode.Mixed);
     }
 
-    /// <summary>Пересоздаёт генераторы под новый класс (вызывается при смене настроек).</summary>
-    public void Configure(GradeBand band)
+    /// <summary>
+    /// Переконфигурация на новую сессию: уровень и режим фиксируются здесь.
+    /// Движки сохраняют циклы, если уровень и режим не менялись.
+    /// </summary>
+    public void Configure(GradeBand band, SubjectMode mode)
     {
-        if (_band == band && _math is not null)
+        if (_band == band && _mode == mode && _math is not null)
         {
             return;
         }
 
         _band = band;
-        _russian = new RussianGenerator(band);
+        _mode = mode;
+        _russian = new RussianEngine(_rng, band);
         _math = new MathEngine(_rng, band);
+        _pair.Clear();
     }
 
     public SchoolTask Next()
     {
-        var wantMath = _rng.Next(2) == 0;
-
-        var subject = wantMath ? MathSubject : RussianSubject;
-        if (subject == _lastSubject && _lastSubjectStreak >= 2)
+        var wantMath = _mode switch
         {
-            wantMath = !wantMath;
-            subject = wantMath ? MathSubject : RussianSubject;
+            SubjectMode.Math => true,
+            SubjectMode.Russian => false,
+            _ => TakeMixedPair(),
+        };
+
+        return wantMath
+            ? _math.Next() with { Difficulty = _band }
+            : _russian.Next() with { Subject = RussianSubject, Difficulty = _band };
+    }
+
+    /// <summary>Очередная пара [Математика, Русский] в случайном порядке; следующая пара мешается заново.</summary>
+    private bool TakeMixedPair()
+    {
+        if (_pair.Count == 0)
+        {
+            _pair.Add(true);
+            _pair.Add(false);
+            Shuffle(_pair);
         }
 
-        if (subject == _lastSubject)
-        {
-            _lastSubjectStreak++;
-        }
-        else
-        {
-            _lastSubjectStreak = 1;
-        }
+        var wantMath = _pair[0];
+        _pair.RemoveAt(0);
+        return wantMath;
+    }
 
-        _lastSubject = subject;
-        return wantMath ? _math.Next() : _russian.Generate(_rng);
+    private void Shuffle(List<bool> list)
+    {
+        for (var i = list.Count - 1; i > 0; i--)
+        {
+            var j = _rng.Next(i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
+        }
     }
 }

@@ -38,6 +38,12 @@ public partial class SettingsWindow : Window
             "3–4 класс — базовый",
             "5–6 класс — сложный",
         };
+        SubjectBox.ItemsSource = new[]
+        {
+            "Смешанный (математика и русский)",
+            "Математика",
+            "Русский язык",
+        };
         RequiredBox.ItemsSource = new[] { "3", "5", "10", "15", "20" };
         GradeBox.SelectionChanged += (_, _) =>
             GradeHintText.Text = GradeBox.SelectedIndex >= 0 && GradeBox.SelectedIndex < GradeHints.Length
@@ -96,6 +102,12 @@ public partial class SettingsWindow : Window
             GradeBand.Grades12 => 0,
             GradeBand.Grades34 => 1,
             _ => 2,
+        };
+        SubjectBox.SelectedIndex = s.SubjectMode switch
+        {
+            SubjectMode.Math => 1,
+            SubjectMode.Russian => 2,
+            _ => 0,
         };
         RequiredBox.SelectedItem = s.RequiredCorrect.ToString();
         AutostartBox.IsChecked = s.AutostartEnabled;
@@ -172,6 +184,12 @@ public partial class SettingsWindow : Window
             1 => GradeBand.Grades34,
             _ => GradeBand.Grades56,
         };
+        s.SubjectMode = SubjectBox.SelectedIndex switch
+        {
+            1 => SubjectMode.Math,
+            2 => SubjectMode.Russian,
+            _ => SubjectMode.Mixed,
+        };
         s.RequiredCorrect = int.Parse((string)RequiredBox.SelectedItem!);
         s.AutostartEnabled = AutostartBox.IsChecked == true;
         s.LockOnStartup = LockOnStartupBox.IsChecked == true;
@@ -179,7 +197,7 @@ public partial class SettingsWindow : Window
         s.ShowHints = ShowHintsBox.IsChecked == true;
         _settings.Save();
 
-        _tasks.Configure(s.GradeBand);
+        // Уровень и режим фиксируются на сессию: применяются при следующем запуске замка.
         if (Environment.ProcessPath is { } exePath)
             AutoStartService.Sync(s.AutostartEnabled, exePath);
 

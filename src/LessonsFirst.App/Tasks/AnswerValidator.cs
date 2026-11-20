@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace LessonsFirst.App.Tasks;
 
@@ -18,6 +19,10 @@ public enum AnswerCheckResult
 /// <summary>
 /// Разбор и проверка ответов всех форм. Всё локально, точно (decimal/целые),
 /// без eval и без вычисления введённых выражений.
+/// Русские текстовые ответы: NFC-нормализация, внешние пробелы, регистр и е/ё —
+/// по AnswerPolicy шаблона; внутренние пробелы и пунктуация не удаляются;
+/// похожие латинские буквы русскими не считаются; й и и не объединяются;
+/// знак ударения U+0301 — не буква.
 /// </summary>
 public static class AnswerValidator
 {
@@ -76,11 +81,89 @@ public static class AnswerValidator
     public static AnswerCheckResult CheckComparison(ComparisonRelation given, ComparisonRelation expected) =>
         given == expected ? AnswerCheckResult.Correct : AnswerCheckResult.Wrong;
 
-    /// <summary>Вариант выбора (русский язык).</summary>
-    public static AnswerCheckResult CheckChoice(string? input, string? correct) =>
-        string.Equals(input?.Trim(), correct, StringComparison.OrdinalIgnoreCase)
+    /// <summary>Вариант выбора (SingleChoice): правильность по идентификатору варианта.</summary>
+    public static AnswerCheckResult CheckChoice(string? selectedOptionId, string? correctOptionId) =>
+        string.Equals(selectedOptionId, correctOptionId, StringComparison.Ordinal)
             ? AnswerCheckResult.Correct
             : AnswerCheckResult.Wrong;
+
+    /// <summary>
+    /// ShortText: одна буква, фрагмент (н/нн) или одно слово.
+    /// Сравнение по полному набору допустимых ответов после нормализации —
+    /// без приблизительного сходства. Пустой или слишком длинный ввод —
+    /// некорректный формат (без исключений); латиница и посторонние символы —
+    /// неверный ответ.
+    /// </summary>
+    public static AnswerCheckResult CheckShortText(string? input, IReadOnlyList<string> accepted, AnswerPolicy policy, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return AnswerCheckResult.InvalidFormat;
+
+        // Сначала нормализация (NFC, знак ударения): длина считается по нормализованному
+        // тексту, чтобы знак ударения не делал верный ответ «слишком длинным».
+        var normalized = NormalizeRussian(input.Trim(), policy);
+        if (normalized.Length == 0)
+            return AnswerCheckResult.InvalidFormat;
+
+        if (normalized.Length > Math.Max(1, maxLength) || normalized.Length > 40)
+            return AnswerCheckResult.InvalidFormat;
+
+        if (!normalized.All(IsCyrillicLetter))
+            return AnswerCheckResult.Wrong;
+
+        foreach (var candidate in accepted)
+        {
+            if (string.Equals(normalized, NormalizeRussian(candidate, policy), StringComparison.Ordinal))
+                return AnswerCheckResult.Correct;
+        }
+
+        return AnswerCheckResult.Wrong;
+    }
+
+    /// <summary>Выделение слов: точное множество TokenId; порядок выбора не важен.
+    /// Пустой выбор — некорректный ввод, а не языковая ошибка.</summary>
+    public static AnswerCheckResult CheckTokenSelection(IReadOnlyCollection<string> selectedTokenIds, IReadOnlySet<string> expectedTokenIds)
+    {
+        if (selectedTokenIds.Count == 0)
+            return AnswerCheckResult.InvalidFormat;
+
+        return selectedTokenIds.ToHashSet().SetEquals(expectedTokenIds)
+            ? AnswerCheckResult.Correct
+            : AnswerCheckResult.Wrong;
+    }
+
+    /// <summary>Границы для запятых: точное множество BoundaryId.
+    /// Пустой набор неверен: в пунктуационных шаблонах этой версии целевая запятая всегда есть.</summary>
+    public static AnswerCheckResult CheckBoundarySelection(IReadOnlyCollection<string> selectedBoundaryIds, IReadOnlySet<string> expectedBoundaryIds)
+    {
+        if (selectedBoundaryIds.Count == 0)
+            return AnswerCheckResult.Wrong;
+
+        return selectedBoundaryIds.ToHashSet().SetEquals(expectedBoundaryIds)
+            ? AnswerCheckResult.Correct
+            : AnswerCheckResult.Wrong;
+    }
+
+    /// <summary>Нормализация русского ответа: NFC, внешние пробелы, регистр, е/ё, знак ударения.</summary>
+    public static string NormalizeRussian(string input, AnswerPolicy policy)
+    {
+        var text = input.Trim().Normalize(NormalizationForm.FormC);
+
+        if (policy.IgnoreStressMark)
+            text = text.Replace("\u0301", string.Empty);
+
+        if (!policy.CaseSensitive)
+            text = text.ToLowerInvariant();
+
+        if (!policy.YoDistinct)
+            text = text.Replace('ё', 'е').Replace('Ё', 'Е');
+
+        return text;
+    }
+
+    /// <summary>Только русские буквы: похожие латинские буквы не проходят.</summary>
+    public static bool IsCyrillicLetter(char c) =>
+        c is >= 'а' and <= 'я' or >= 'А' and <= 'Я' or 'ё' or 'Ё';
 
     public static bool TryParseInteger(string? input, out int value)
     {

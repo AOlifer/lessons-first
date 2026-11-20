@@ -83,10 +83,118 @@ public class AnswerValidatorTests
     public void Comparison_Relations(ComparisonRelation given, AnswerCheckResult result) =>
         Assert.Equal(result, AnswerValidator.CheckComparison(given, ComparisonRelation.Less));
 
-    // —— Choice ——
+    // —— Choice (по идентификатору варианта) ——
     [Fact]
-    public void Choice_CaseInsensitive() =>
-        Assert.Equal(AnswerCheckResult.Correct, AnswerValidator.CheckChoice("О", "о"));
+    public void Choice_ById()
+    {
+        Assert.Equal(AnswerCheckResult.Correct, AnswerValidator.CheckChoice("o1", "o1"));
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckChoice("o2", "o1"));
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckChoice(null, "o1"));
+    }
+
+    // —— ShortText ——
+    private static readonly AnswerPolicy LetterPolicy = new() { CaseSensitive = false };
+    private static readonly AnswerPolicy WordPolicy = new() { CaseSensitive = false, YoDistinct = false, IgnoreStressMark = true };
+
+    [Fact]
+    public void ShortText_Letter_CaseInsensitive()
+    {
+        Assert.Equal(AnswerCheckResult.Correct,
+            AnswerValidator.CheckShortText("И", new[] { "и" }, LetterPolicy, 1));
+        Assert.Equal(AnswerCheckResult.Correct,
+            AnswerValidator.CheckShortText(" и ", new[] { "и" }, LetterPolicy, 1));
+    }
+
+    [Fact]
+    public void ShortText_WrongLetter_IsWrong()
+    {
+        Assert.Equal(AnswerCheckResult.Wrong,
+            AnswerValidator.CheckShortText("а", new[] { "и" }, LetterPolicy, 1));
+        // й и и не объединяются
+        Assert.Equal(AnswerCheckResult.Wrong,
+            AnswerValidator.CheckShortText("й", new[] { "и" }, LetterPolicy, 1));
+    }
+
+    [Fact]
+    public void ShortText_LatinLookalikes_Rejected()
+    {
+        // латинские i, c, e, o, a, y не принимаются вместо русских
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckShortText("i", new[] { "и" }, LetterPolicy, 1));
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckShortText("c", new[] { "с" }, LetterPolicy, 1));
+        // слово с латинскими k, o вместо к, о
+        var latinKon = string.Concat('k', 'o', 'н', 'ь');
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckShortText(latinKon, new[] { "конь" }, LetterPolicy, 4));
+    }
+
+    [Fact]
+    public void ShortText_YoDistinct_WhenPolicyRequires()
+    {
+        var policy = new AnswerPolicy { CaseSensitive = false, YoDistinct = true };
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckShortText("е", new[] { "ё" }, policy, 1));
+        Assert.Equal(AnswerCheckResult.Correct, AnswerValidator.CheckShortText("ё", new[] { "ё" }, policy, 1));
+    }
+
+    [Fact]
+    public void ShortText_YoVariantsAccepted_ForWordForms()
+    {
+        // конём и конем — обе формы нормативны в заданиях на словоформу
+        Assert.Equal(AnswerCheckResult.Correct, AnswerValidator.CheckShortText("конем", new[] { "конём", "конем" }, WordPolicy, 24));
+        Assert.Equal(AnswerCheckResult.Correct, AnswerValidator.CheckShortText("КОНЁМ", new[] { "конём", "конем" }, WordPolicy, 24));
+    }
+
+    [Fact]
+    public void ShortText_NfcDecomposedEqualsComposed()
+    {
+        // NFC: й в разложенной форме (и + U+0306? нет: й = и + combining breve U+0306)
+        var decomposed = "и\u0306"; // й как и + U+0306
+        var composed = "й";
+        Assert.NotEqual(decomposed, composed); // до нормализации разные строки
+        var policy = new AnswerPolicy { CaseSensitive = false };
+        Assert.Equal(AnswerCheckResult.Wrong,
+            AnswerValidator.CheckShortText(decomposed, new[] { "и" }, policy, 1)); // й ≠ и даже после NFC
+    }
+
+    [Fact]
+    public void ShortText_StressMarkIgnoredWhenAllowed()
+    {
+        var policy = new AnswerPolicy { CaseSensitive = false, IgnoreStressMark = true };
+        Assert.Equal(AnswerCheckResult.Correct,
+            AnswerValidator.CheckShortText("ко\u0301нь", new[] { "конь" }, policy, 4));
+        // знак ударения — не буква и не увеличивает длину смысла
+        Assert.Equal(AnswerCheckResult.Wrong,
+            AnswerValidator.CheckShortText("конь", new[] { "кон" }, policy, 4));
+    }
+
+    [Fact]
+    public void ShortText_EmptyOrTooLong_IsInvalidFormat()
+    {
+        Assert.Equal(AnswerCheckResult.InvalidFormat, AnswerValidator.CheckShortText("", new[] { "и" }, LetterPolicy, 1));
+        Assert.Equal(AnswerCheckResult.InvalidFormat, AnswerValidator.CheckShortText("   ", new[] { "и" }, LetterPolicy, 1));
+        Assert.Equal(AnswerCheckResult.InvalidFormat, AnswerValidator.CheckShortText("нннн", new[] { "нн" }, LetterPolicy, 2));
+        Assert.Equal(AnswerCheckResult.InvalidFormat, AnswerValidator.CheckShortText("оченьдлинноеслово", new[] { "нн" }, LetterPolicy, 2));
+    }
+
+    // —— TokenSelection ——
+    [Fact]
+    public void TokenSelection_ExactSetMatch()
+    {
+        var expected = new HashSet<string> { "t1", "t3" };
+        Assert.Equal(AnswerCheckResult.Correct, AnswerValidator.CheckTokenSelection(new[] { "t3", "t1" }, expected));
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckTokenSelection(new[] { "t1" }, expected));
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckTokenSelection(new[] { "t1", "t3", "t5" }, expected));
+        Assert.Equal(AnswerCheckResult.InvalidFormat, AnswerValidator.CheckTokenSelection(Array.Empty<string>(), expected));
+    }
+
+    // —— BoundarySelection ——
+    [Fact]
+    public void BoundarySelection_ExactSetMatch_EmptyIsWrong()
+    {
+        var expected = new HashSet<string> { "b0", "b1" };
+        Assert.Equal(AnswerCheckResult.Correct, AnswerValidator.CheckBoundarySelection(new[] { "b1", "b0" }, expected));
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckBoundarySelection(new[] { "b0" }, expected));
+        // пустой набор неверен: целевая запятая всегда есть
+        Assert.Equal(AnswerCheckResult.Wrong, AnswerValidator.CheckBoundarySelection(Array.Empty<string>(), expected));
+    }
 
     [Fact]
     public void ReduceFraction_SimplifiesAndKeepsPositiveDenominator()
@@ -142,70 +250,51 @@ public class SessionProgressTests
         progress.Reset();
 
         Assert.Equal(0, progress.Correct);
+        Assert.Equal(0, progress.Mistakes);
         Assert.False(progress.Completed);
     }
 
     [Fact]
-    public void Mistake_AddsOneTaskToRequired()
+    public void Mistake_DoesNotChangeProgressOrGoal()
     {
         var progress = new SessionProgress(3);
+        progress.RegisterMistake();
+        progress.RegisterMistake();
+        progress.RegisterMistake();
+
         Assert.Equal(3, progress.Required);
-
-        Assert.True(progress.RegisterMistake(Guid.NewGuid()));
-        Assert.Equal(4, progress.Required);
-        Assert.False(progress.Completed);
-    }
-
-    [Fact]
-    public void FailedTask_NeverCounted_EvenAfterCorrect()
-    {
-        var progress = new SessionProgress(2);
-        var taskId = Guid.NewGuid();
-        progress.RegisterMistake(taskId);
-
-        Assert.False(progress.RegisterCorrect(taskId));
         Assert.Equal(0, progress.Correct);
-        Assert.Equal(3, progress.Required);
+        Assert.Equal(3, progress.Mistakes);
         Assert.False(progress.Completed);
     }
 
     [Fact]
-    public void RepeatedMistakesOnSameTask_AddOnlyOne()
+    public void Task_CountedAfterMistakeOnIt()
     {
+        // Тот же вопрос остаётся: верный ответ после ошибки засчитывается.
         var progress = new SessionProgress(2);
         var taskId = Guid.NewGuid();
+        progress.RegisterMistake();
 
-        Assert.True(progress.RegisterMistake(taskId));
-        Assert.False(progress.RegisterMistake(taskId));
-
-        Assert.Equal(3, progress.Required);
+        Assert.True(progress.RegisterCorrect(taskId));
+        Assert.Equal(1, progress.Correct);
+        Assert.Equal(2, progress.Required);
     }
 
     [Fact]
-    public void Completion_NeedsExtraTaskPerEachFailed()
+    public void Completion_AtExactlyN()
     {
-        var progress = new SessionProgress(2);
-        progress.RegisterMistake(Guid.NewGuid()); // цель стала 3
+        var progress = new SessionProgress(3);
+        progress.RegisterMistake();
         progress.RegisterCorrect(Guid.NewGuid());
         progress.RegisterCorrect(Guid.NewGuid());
 
-        Assert.False(progress.Completed); // 2 из 3: провал добавил задачу
+        Assert.False(progress.Completed);
 
         progress.RegisterCorrect(Guid.NewGuid());
         Assert.True(progress.Completed);
         Assert.Equal(3, progress.Correct);
         Assert.Equal(3, progress.Required);
-    }
-
-    [Fact]
-    public void Reset_ClearsFailuresToo()
-    {
-        var progress = new SessionProgress(2);
-        var taskId = Guid.NewGuid();
-        progress.RegisterMistake(taskId);
-        progress.Reset();
-
-        Assert.Equal(2, progress.Required);
-        Assert.True(progress.RegisterCorrect(taskId)); // после сброса задание снова зачитывается
+        Assert.Equal(1, progress.Mistakes);
     }
 }

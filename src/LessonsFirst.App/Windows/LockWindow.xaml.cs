@@ -13,10 +13,11 @@ namespace LessonsFirst.App.Windows;
 /// <summary>
 /// Полноэкранный несворачиваемый замок: закрывает все мониторы, глушит системные
 /// горячие клавиши, требует N правильных ответов или PIN родителя.
-/// Задание с ошибкой не зачитывается никогда (даже после верного ответа) и
-/// добавляет одну задачу к цели; математика при этом оставляет то же задание,
-/// русский даёт новое. Некорректный ввод подсказывает формат и не считается
-/// ошибкой; один TaskId засчитывается один раз.
+/// Неверный ответ (любой предмет) оставляет то же задание для повторной попытки
+/// и показывает подсказку о способе решения; накопленные верные ответы не меняются.
+/// Верный ответ увеличивает прогресс ровно один раз (один TaskId — один зачёт);
+/// пояснение шаблона (проверочное слово) показывается после верного ответа.
+/// Некорректный ввод подсказывает формат и не считается ошибкой.
 /// </summary>
 public partial class LockWindow : Window
 {
@@ -33,6 +34,14 @@ public partial class LockWindow : Window
     private DateTime _lockedAt;
     private bool _answeringLocked;   // ждём перехода к следующему заданию
     private bool _unlocked;
+
+    // Выбранное в формах выбора (SingleChoice / TokenSelection / BoundarySelection)
+    private string? _selectedOptionId;
+    private readonly HashSet<string> _selectedTokenIds = new();
+    private readonly HashSet<string> _selectedBoundaryIds = new();
+    private readonly List<Button> _optionButtons = new();
+    private readonly Dictionary<string, Button> _tokenButtons = new();
+    private readonly Dictionary<string, Button> _boundaryButtons = new();
 
     /// <summary>Замок снят (решены задачи или введён PIN родителя).</summary>
     public event Action? Unlocked;
@@ -83,7 +92,7 @@ public partial class LockWindow : Window
     protected override void OnActivated(EventArgs e)
     {
         base.OnActivated(e);
-        if (!_unlocked && _current is { Form: AnswerForm.Integer or AnswerForm.Decimal })
+        if (!_unlocked && _current is { Form: AnswerForm.Integer or AnswerForm.Decimal or AnswerForm.ShortText })
         {
             Keyboard.Focus(AnswerBox);
         }
@@ -109,7 +118,8 @@ public partial class LockWindow : Window
         _lockedAt = DateTime.Now;
         _unlocked = false;
         _progress = new SessionProgress(_settings.Settings.RequiredCorrect);
-        _tasks.Configure(_settings.Settings.GradeBand);
+        // Уровень и предметный режим фиксируются на начало сессии.
+        _tasks.Configure(_settings.Settings.GradeBand, _settings.Settings.SubjectMode);
         _hook.Install();
         _focusGuard.Start();
         PinPanel.Visibility = Visibility.Collapsed;
@@ -127,7 +137,16 @@ public partial class LockWindow : Window
 
     private void ShowNextTask()
     {
-        _current = _tasks.Next();
+        ShowTask(_tasks.Next());
+    }
+
+    /// <summary>Визуальная проверка (harness): показать конкретное задание,
+    /// не трогая прогресс и генераторы. Только для тестов рендера.</summary>
+    internal void ShowReviewTask(SchoolTask task) => ShowTask(task);
+
+    private void ShowTask(SchoolTask task)
+    {
+        _current = task;
         _answeringLocked = false;
 
         SubjectText.Text = _current.Subject;
@@ -139,6 +158,13 @@ public partial class LockWindow : Window
 
         OptionsPanel.Children.Clear();
         ComparisonPanel.Children.Clear();
+        TokensPanel.Children.Clear();
+        _selectedOptionId = null;
+        _selectedTokenIds.Clear();
+        _selectedBoundaryIds.Clear();
+        _optionButtons.Clear();
+        _tokenButtons.Clear();
+        _boundaryButtons.Clear();
 
         SinglePanel.Visibility = Visibility.Collapsed;
         FractionPanel.Visibility = Visibility.Collapsed;
@@ -147,24 +173,33 @@ public partial class LockWindow : Window
         OptionsPanel.Visibility = Visibility.Collapsed;
         ComparisonPanel.Visibility = Visibility.Collapsed;
         InputPanel.Visibility = Visibility.Collapsed;
+        SelectionPanel.Visibility = Visibility.Collapsed;
+        ChoiceConfirmPanel.Visibility = Visibility.Collapsed;
 
         switch (_current.Form)
         {
             case AnswerForm.Choice:
                 OptionsPanel.Visibility = Visibility.Visible;
-                foreach (var option in _current.Options ?? Array.Empty<string>())
+                ChoiceConfirmPanel.Visibility = Visibility.Visible;
+                foreach (var option in _current.Options ?? Array.Empty<ChoiceOption>())
                 {
                     var button = new Button
                     {
-                        Content = option,
+                        Content = option.Text,
                         FontSize = 26,
                         MinWidth = 150,
                         Height = 64,
                         Margin = new Thickness(8),
-                        Tag = option,
+                        Tag = option.Id,
                     };
                     button.Click += Option_Click;
                     OptionsPanel.Children.Add(button);
+                    _optionButtons.Add(button);
+                }
+
+                if (_optionButtons.Count > 0)
+                {
+                    Keyboard.Focus(_optionButtons[0]);
                 }
 
                 break;
@@ -180,6 +215,15 @@ public partial class LockWindow : Window
             case AnswerForm.Decimal:
                 InputPanel.Visibility = Visibility.Visible;
                 SinglePanel.Visibility = Visibility.Visible;
+                AnswerBox.MaxLength = 20;
+                AnswerBox.Text = string.Empty;
+                Keyboard.Focus(AnswerBox);
+                break;
+
+            case AnswerForm.ShortText:
+                InputPanel.Visibility = Visibility.Visible;
+                SinglePanel.Visibility = Visibility.Visible;
+                AnswerBox.MaxLength = Math.Clamp(_current.InputMaxLength, 1, 20);
                 AnswerBox.Text = string.Empty;
                 Keyboard.Focus(AnswerBox);
                 break;
@@ -200,6 +244,82 @@ public partial class LockWindow : Window
                 SecondFactorBox.Text = string.Empty;
                 Keyboard.Focus(FirstFactorBox);
                 break;
+
+            case AnswerForm.TokenSelection:
+                SelectionPanel.Visibility = Visibility.Visible;
+                BuildTokenButtons();
+                if (_tokenButtons.TryGetValue("t0", out var firstToken))
+                {
+                    Keyboard.Focus(firstToken);
+                }
+
+                break;
+
+            case AnswerForm.BoundarySelection:
+                SelectionPanel.Visibility = Visibility.Visible;
+                BuildBoundaryButtons();
+                if (_boundaryButtons.TryGetValue("b0", out var firstBoundary))
+                {
+                    Keyboard.Focus(firstBoundary);
+                }
+
+                break;
+        }
+    }
+
+    /// <summary>Слова предложения: выбор кликом/клавиатурой, порядок не важен.</summary>
+    private void BuildTokenButtons()
+    {
+        foreach (var token in _current.Tokens ?? Array.Empty<TaskToken>())
+        {
+            var button = new Button
+            {
+                Content = token.Text,
+                FontSize = 24,
+                MinWidth = 72,
+                Height = 58,
+                Margin = new Thickness(6),
+                Tag = token.TokenId,
+            };
+            button.Click += Token_Click;
+            TokensPanel.Children.Add(button);
+            _tokenButtons[token.TokenId] = button;
+        }
+    }
+
+    /// <summary>Слова с кнопками-границами между ними: выбор мест для запятых.</summary>
+    private void BuildBoundaryButtons()
+    {
+        var tokens = _current.Tokens ?? Array.Empty<TaskToken>();
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var word = new TextBlock
+            {
+                Text = tokens[i].Text,
+                FontSize = 26,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource("PaperBrush"),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(2, 0, 2, 0),
+            };
+            TokensPanel.Children.Add(word);
+
+            if (i + 1 < tokens.Count)
+            {
+                var gap = new Button
+                {
+                    Content = "␣",
+                    FontSize = 20,
+                    Width = 52,
+                    Height = 44,
+                    Margin = new Thickness(1),
+                    Tag = $"b{i}",
+                    ToolTip = "Поставить запятую здесь",
+                };
+                gap.Click += Boundary_Click;
+                TokensPanel.Children.Add(gap);
+                _boundaryButtons[$"b{i}"] = gap;
+            }
         }
     }
 
@@ -224,9 +344,65 @@ public partial class LockWindow : Window
             return;
         }
 
-        var option = (string)((Button)sender).Tag;
-        Evaluate(AnswerValidator.CheckChoice(option, _current.CorrectOption), formatHint: null);
+        var optionId = (string)((Button)sender).Tag;
+        _selectedOptionId = optionId;
+        foreach (var button in _optionButtons)
+        {
+            Highlight(button, (string)button.Tag == optionId);
+        }
     }
+
+    private void Token_Click(object sender, RoutedEventArgs e)
+    {
+        if (_answeringLocked)
+        {
+            return;
+        }
+
+        var tokenId = (string)((Button)sender).Tag;
+        if (!_selectedTokenIds.Add(tokenId))
+        {
+            _selectedTokenIds.Remove(tokenId);
+        }
+
+        foreach (var (id, button) in _tokenButtons)
+        {
+            Highlight(button, _selectedTokenIds.Contains(id));
+        }
+    }
+
+    private void Boundary_Click(object sender, RoutedEventArgs e)
+    {
+        if (_answeringLocked)
+        {
+            return;
+        }
+
+        var boundaryId = (string)((Button)sender).Tag;
+        if (!_selectedBoundaryIds.Add(boundaryId))
+        {
+            _selectedBoundaryIds.Remove(boundaryId);
+        }
+
+        foreach (var (id, button) in _boundaryButtons)
+        {
+            Highlight(button, _selectedBoundaryIds.Contains(id));
+        }
+    }
+
+    private static void Highlight(Button button, bool selected)
+    {
+        button.Background = selected
+            ? (Brush)Application.Current.FindResource("LimeBrush")
+            : (Brush)Application.Current.FindResource("PeriwinkleBrush");
+        button.Foreground = selected
+            ? (Brush)Application.Current.FindResource("MidnightBrush")
+            : (Brush)Application.Current.FindResource("PaperBrush");
+    }
+
+    private void SelectionSubmit_Click(object sender, RoutedEventArgs e) => SubmitSelection();
+
+    private void ChoiceSubmit_Click(object sender, RoutedEventArgs e) => SubmitChoice();
 
     private void SubmitRelation(ComparisonRelation relation)
     {
@@ -251,6 +427,14 @@ public partial class LockWindow : Window
             else if (InputPanel.Visibility == Visibility.Visible)
             {
                 Submit();
+            }
+            else if (ChoiceConfirmPanel.Visibility == Visibility.Visible)
+            {
+                SubmitChoice();
+            }
+            else if (SelectionPanel.Visibility == Visibility.Visible)
+            {
+                SubmitSelection();
             }
 
             e.Handled = true;
@@ -277,6 +461,8 @@ public partial class LockWindow : Window
                 NumeratorBox.Text, DenominatorBox.Text, _current.ExpectedFraction),
             AnswerForm.FactorPair => AnswerValidator.CheckFactorPair(
                 FirstFactorBox.Text, SecondFactorBox.Text, _current.ExpectedFactors),
+            AnswerForm.ShortText => AnswerValidator.CheckShortText(
+                AnswerBox.Text, _current.AcceptedAnswers!, _current.Policy ?? LetterPolicyDefault, _current.InputMaxLength),
             _ => AnswerCheckResult.InvalidFormat,
         };
 
@@ -286,10 +472,60 @@ public partial class LockWindow : Window
             AnswerForm.Decimal => "Введите десятичную дробь через запятую, например 7,2",
             AnswerForm.Fraction => "Введите числитель и знаменатель; знаменатель не может быть нулём",
             AnswerForm.FactorPair => "Введите два целых числа от 2 до 9",
+            AnswerForm.ShortText => $"Впиши ответ русскими буквами (до {_current.InputMaxLength} знаков)",
             _ => null,
         };
 
         Evaluate(result, formatHint);
+    }
+
+    private static readonly AnswerPolicy LetterPolicyDefault = new() { CaseSensitive = false };
+
+    /// <summary>SingleChoice: Enter или «Проверить» подтверждают текущий выбор.</summary>
+    private void SubmitChoice()
+    {
+        if (_answeringLocked || ChoiceConfirmPanel.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        if (_selectedOptionId is null)
+        {
+            FeedbackText.Foreground = (Brush)FindResource("DangerBrush");
+            FeedbackText.Text = "Сначала выбери один вариант.";
+            return;
+        }
+
+        Evaluate(AnswerValidator.CheckChoice(_selectedOptionId, _current.CorrectOptionId), formatHint: null);
+    }
+
+    /// <summary>Выделение слов или границ: Enter или «Проверить» подтверждают выбор.</summary>
+    private void SubmitSelection()
+    {
+        if (_answeringLocked || SelectionPanel.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        if (_current.Form == AnswerForm.TokenSelection)
+        {
+            if (_selectedTokenIds.Count == 0)
+            {
+                FeedbackText.Foreground = (Brush)FindResource("DangerBrush");
+                FeedbackText.Text = "Сначала выбери слова: щёлкай по ним.";
+                return;
+            }
+
+            Evaluate(
+                AnswerValidator.CheckTokenSelection(_selectedTokenIds, _current.ExpectedTokenIds!),
+                formatHint: "Выбери все подходящие слова");
+            return;
+        }
+
+        // BoundarySelection: пустой набор — неверный ответ (целевая запятая всегда есть).
+        Evaluate(
+            AnswerValidator.CheckBoundarySelection(_selectedBoundaryIds, _current.ExpectedBoundaryIds!),
+            formatHint: "Щёлкни по местам между словами, где нужны запятые");
     }
 
     private async void Evaluate(AnswerCheckResult result, string? formatHint)
@@ -300,7 +536,6 @@ public partial class LockWindow : Window
         }
 
         var task = _current;
-        var isMath = task.Form != AnswerForm.Choice;
 
         switch (result)
         {
@@ -311,39 +546,29 @@ public partial class LockWindow : Window
                 return; // прогресс не меняется, задание остаётся
 
             case AnswerCheckResult.Wrong:
+                // Любой предмет: то же задание остаётся для повторной попытки;
+                // накопленные верные ответы не меняются. Подсказка о способе решения.
                 _mistakes++;
-                _progress.RegisterMistake(task.TaskId);
+                _progress.RegisterMistake();
                 FeedbackText.Foreground = (Brush)FindResource("DangerBrush");
+                FeedbackText.Text = "✗ Неверно, попробуй ещё раз. Посмотри на подсказку сверху.";
+                if (!string.IsNullOrEmpty(task.Hint))
+                {
+                    HintText.Text = task.Hint;
+                }
+
                 ProgressText.Text = $"Верных ответов: {_progress.Correct} из {_progress.Required}";
-
-                if (isMath)
-                {
-                    // Математика: то же задание остаётся для повторной попытки, но уже
-                    // не зачтётся — цель выросла на одну задачу.
-                    FeedbackText.Text = "✗ Неверно, попробуй ещё раз. Это задание уже не зачтётся — нужно будет решить ещё одно.";
-                    FocusFirstField();
-                    return;
-                }
-
-                // Русский язык: новая задача, проваленная не зачитывается.
-                FeedbackText.Text = "✗ Неверно. Задание не зачтётся — попробуй другое!";
-                _answeringLocked = true;
-                await Task.Delay(900);
-                if (!_unlocked)
-                {
-                    ShowNextTask();
-                }
-
+                FocusFirstField();
                 return;
         }
 
-        // Верный ответ: зачёт ровно один раз на TaskId; проваленное ранее — без зачёта.
+        // Верный ответ: зачёт ровно один раз на TaskId.
         _answeringLocked = true;
         var counted = _progress.RegisterCorrect(task.TaskId);
         FeedbackText.Foreground = (Brush)FindResource("LimeBrush");
         FeedbackText.Text = _progress.Completed
-            ? "Отлично! Всё решено!"
-            : counted ? "✓ Верно!" : "✓ Верно, но из-за ошибки задание не зачитывается.";
+            ? $"Отлично! Всё решено!{ExplanationSuffix(task)}"
+            : $"✓ Верно!{ExplanationSuffix(task)}";
         ProgressText.Text = $"Верных ответов: {_progress.Correct} из {_progress.Required}";
 
         await Task.Delay(900);
@@ -364,12 +589,16 @@ public partial class LockWindow : Window
         }
     }
 
+    private static string ExplanationSuffix(SchoolTask task) =>
+        string.IsNullOrEmpty(task.Explanation) ? "" : $" {task.Explanation}";
+
     private void FocusFirstField()
     {
         switch (_current.Form)
         {
             case AnswerForm.Integer:
             case AnswerForm.Decimal:
+            case AnswerForm.ShortText:
                 Keyboard.Focus(AnswerBox);
                 break;
             case AnswerForm.Fraction:
@@ -377,6 +606,15 @@ public partial class LockWindow : Window
                 break;
             case AnswerForm.FactorPair:
                 Keyboard.Focus(FirstFactorBox);
+                break;
+            case AnswerForm.Choice:
+                Keyboard.Focus(_optionButtons.FirstOrDefault(b => (string)b.Tag == _selectedOptionId) ?? _optionButtons.FirstOrDefault());
+                break;
+            case AnswerForm.TokenSelection:
+                Keyboard.Focus(_tokenButtons.GetValueOrDefault("t0"));
+                break;
+            case AnswerForm.BoundarySelection:
+                Keyboard.Focus(_boundaryButtons.GetValueOrDefault("b0"));
                 break;
         }
     }

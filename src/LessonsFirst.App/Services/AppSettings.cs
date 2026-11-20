@@ -8,6 +8,9 @@ public sealed class AppSettings
 
     public GradeBand GradeBand { get; set; } = GradeBand.Grades34;
 
+    /// <summary>Предметный режим: математика, русский или чередование. Если настройки нет — «Смешанный».</summary>
+    public SubjectMode SubjectMode { get; set; } = SubjectMode.Mixed;
+
     /// <summary>Сколько правильных ответов нужно для разблокировки.</summary>
     public int RequiredCorrect { get; set; } = 5;
 
