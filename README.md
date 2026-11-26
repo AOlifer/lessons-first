@@ -123,7 +123,7 @@ Paper `#F7F6F2` / Lime `#D7F561`. Описание набора — `lessons-fir
 
   ```
   dotnet publish src/LessonsFirst.App/LessonsFirst.App.csproj -c Release -r win-x64 --self-contained -o publish
-  ISCC /DVersion=0.2.0 installer/lessons-first.iss
+  ISCC /DVersion=0.2.1 installer/lessons-first.iss
   ```
 
 ## Лицензия
