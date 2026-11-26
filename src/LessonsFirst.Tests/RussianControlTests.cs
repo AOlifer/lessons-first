@@ -139,7 +139,7 @@ public class RussianControlTests
         Assert.Equal(letter, entry.Letter);
         Assert.Equal(checkWord, entry.CheckWord);
         // Заполнение пропуска восстанавливает проверенную словоформу.
-        Assert.Contains(sentence.Replace("_", letter.ToString()), sentence.Replace("_", letter.ToString()));
+        Assert.Equal(RussianOracles.RestoredGapTexts[sentence], sentence.Replace("_", letter.ToString()));
         Assert.Equal(AnswerCheckResult.Correct,
             AnswerValidator.CheckShortText(letter.ToString(), new[] { entry.Letter.ToString() }, LetterPolicy, 1));
     }
@@ -147,7 +147,9 @@ public class RussianControlTests
     [Theory]
     [InlineData("На поляне растёт высокий ду_", 'б', "дубы")]
     [InlineData("Повар взял острый но_", 'ж', "ножи")]
-    [InlineData("Лодка причалила к крутому бере_", 'г', "берега")]
+    [InlineData("На шее тёплый шар_", 'ф', "шарфы")]
+    [InlineData("За рекой виднелся крутой бере_", 'г', "берега")]
+    [InlineData("Мы поднялись на девятый эта_", 'ж', "этажи")]
     public void R34_02_Paired_Control(string sentence, char letter, string checkForm)
     {
         var entry = RussianOrphograms.PairedConsonants.Single(e => e.Sentence == sentence);
@@ -159,7 +161,7 @@ public class RussianControlTests
     [InlineData("Это мес_ный житель", 'т', "место")]
     [InlineData("В груди быстро стучит сер_це", 'д', "сердечный")]
     [InlineData("Небо освещает яркое со_нце", 'л', "солнечный")]
-    [InlineData("Здрав_ствуй, дедушка!", 'в', "здравие")]
+    [InlineData("Здра_ствуй, дедушка!", 'в', "здравие")]
     public void R34_03_Silent_Control(string sentence, char letter, string checkWord)
     {
         var entry = RussianOrphograms.SilentConsonants.Single(e => e.Sentence == sentence);
@@ -169,7 +171,8 @@ public class RussianControlTests
 
     [Theory]
     [InlineData("Началась сильная в_юга", 'ь')]
-    [InlineData("Мама сшила новое пла_е", 'ь')]
+    [InlineData("Мама сшила новое плат_е", 'ь')]
+    [InlineData("Осенью с деревьев падают лист_я", 'ь')]
     [InlineData("Мы в_ехали во двор", 'ъ')]
     [InlineData("Мы прочитали об_явление", 'ъ')]
     public void R34_04_Separators_Control(string sentence, char letter)
@@ -332,6 +335,7 @@ public class RussianControlTests
     [InlineData("Он хочет хорошо учи", false)]
     [InlineData("Пора ложи", false)]
     [InlineData("Вечером он рано ложи", true)]
+    [InlineData("Зритель тихо сади", true)]
     public void R56_04_TsaTsya_Control(string before, bool isTsa)
     {
         var entry = RussianOrphograms.TsaWords.Single(e => e.Before == before);
@@ -435,5 +439,68 @@ public class RussianControlTests
 
         var correct = task.Options!.Single(o => o.Id == task.CorrectOptionId).Text;
         Assert.Matches(new Regex("род, .* число, .* падеж"), correct);
+    }
+
+    // ————— Пропуски: заполнение восстанавливает выверенный текст —————
+    [Fact]
+    public void Gaps_FillingRestoresVerifiedText()
+    {
+        // Все банки, где текст с пропуском записан вручную и может разойтись с ответом.
+        var gaps = new List<(string Template, string Masked, string Filled)>();
+        foreach (var e in RussianOrphograms.UnstressedVowels)
+        {
+            gaps.Add(("R34-01", e.Sentence, e.Sentence.Replace("_", e.Letter.ToString())));
+        }
+
+        foreach (var e in RussianOrphograms.PairedConsonants)
+        {
+            gaps.Add(("R34-02", e.Sentence, e.Sentence.Replace("_", e.Letter.ToString())));
+        }
+
+        foreach (var e in RussianOrphograms.SilentConsonants)
+        {
+            gaps.Add(("R34-03", e.Sentence, e.Sentence.Replace("_", e.Letter.ToString())));
+        }
+
+        foreach (var e in RussianOrphograms.SoftSeparators.Concat(RussianOrphograms.HardSeparators))
+        {
+            gaps.Add(("R34-04", e.Sentence, e.Sentence.Replace("_", e.Letter.ToString())));
+        }
+
+        foreach (var e in RussianOrphograms.TsaWords)
+        {
+            gaps.Add(("R56-04", e.Before + "___" + e.After, e.Before + (e.IsTsa ? "тся" : "ться") + e.After));
+        }
+
+        foreach (var e in RussianOrphograms.PrefixZS)
+        {
+            gaps.Add(("R56-06", e.Masked, e.Masked.Replace("_", e.Letter.ToString())));
+        }
+
+        foreach (var e in RussianOrphograms.DoubleN)
+        {
+            gaps.Add(("R56-07", e.Phrase, e.Phrase.Replace("_", e.Fragment)));
+        }
+
+        // Расхождения собираются все сразу: одна запись — одна строка отчёта.
+        var problems = new List<string>();
+        foreach (var (template, masked, filled) in gaps)
+        {
+            if (!RussianOracles.RestoredGapTexts.TryGetValue(masked, out var verified))
+            {
+                problems.Add($"{template}: «{masked}» нет в оракуле");
+            }
+            else if (filled != verified)
+            {
+                problems.Add($"{template}: «{masked}» заполняется как «{filled}», должно быть «{verified}»");
+            }
+        }
+
+        // В оракуле не осталось устаревших записей.
+        problems.AddRange(RussianOracles.RestoredGapTexts.Keys
+            .Except(gaps.Select(g => g.Masked))
+            .Select(stale => $"оракул: «{stale}» — такой записи в банке нет"));
+
+        Assert.True(problems.Count == 0, string.Join(Environment.NewLine + Environment.NewLine, problems));
     }
 }
